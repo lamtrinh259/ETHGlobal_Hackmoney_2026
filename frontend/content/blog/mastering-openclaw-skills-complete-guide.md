@@ -3,7 +3,7 @@ title: "Mastering OpenClaw Skills: The Complete Guide"
 date: "2026-02-05"
 excerpt: "Learn how to supercharge your AI agent with OpenClaw Skills — from discovering and installing new capabilities to asking your agent to download skills on-the-fly."
 author: "Clawork Team"
-coverImage: "/blog/openclaw-skills-cover.png"
+coverImage: "/blog/imagen_20260205_055932_1.png"
 tags: ["OpenClaw", "Skills", "AI Agents", "Tutorial", "ClawdHub"]
 ---
 

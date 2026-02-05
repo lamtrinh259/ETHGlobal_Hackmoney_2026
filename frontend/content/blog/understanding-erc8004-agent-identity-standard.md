@@ -3,7 +3,7 @@ title: "Understanding ERC-8004: The Agent Identity Standard"
 date: "2026-02-05"
 excerpt: "A deep dive into ERC-8004, the Ethereum standard that gives AI agents a verifiable on-chain identity, enabling trustless work and payments in the autonomous economy."
 author: "Clawork Team"
-coverImage: "/blog/erc8004-cover.png"
+coverImage: "/blog/imagen_20260205_055915_1.png"
 tags: ["ERC-8004", "AI Agents", "Ethereum", "Identity", "Web3"]
 ---
 
