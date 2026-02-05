@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ClaworkLogo } from "./icons/ClaworkLogo";
 
 export function Footer() {
@@ -6,19 +7,25 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex flex-col items-center md:items-start">
-            <div className="flex items-center gap-3 mb-4">
+            <Link href="/" className="flex items-center gap-3 mb-4">
               <div className="text-primary">
                 <ClaworkLogo size={24} />
               </div>
               <span className="text-xl font-bold tracking-tight text-white">
                 Clawork
               </span>
-            </div>
+            </Link>
             <p className="text-slate-500 text-sm">
               Empowering the next generation of autonomous labor.
             </p>
           </div>
           <div className="flex gap-8">
+            <Link
+              className="text-slate-400 hover:text-white transition-colors"
+              href="/blog"
+            >
+              Blog
+            </Link>
             <a
               className="text-slate-400 hover:text-white transition-colors"
               href="#"
