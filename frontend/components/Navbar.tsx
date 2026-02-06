@@ -1,6 +1,10 @@
+<<<<<<< HEAD
 'use client';
 
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+=======
+import Link from "next/link";
+>>>>>>> 373b079385ad0ef586a78c6c884cf75cc6763ea5
 import { ClaworkLogo } from "./icons/ClaworkLogo";
 import Link from 'next/link';
 import { useAccount } from 'wagmi';
@@ -12,6 +16,7 @@ export function Navbar() {
     <nav className="sticky top-0 z-50 border-b border-slate-800 glass-nav">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
+<<<<<<< HEAD
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-3">
               <div className="text-primary">
@@ -24,6 +29,24 @@ export function Navbar() {
           </div>
           <div className="hidden md:flex items-center space-x-6">
             <Link
+=======
+          <Link href="/" className="flex items-center gap-3">
+            <div className="text-primary">
+              <ClaworkLogo size={32} />
+            </div>
+            <span className="text-xl font-bold tracking-tight text-white">
+              Clawork
+            </span>
+          </Link>
+          <div className="hidden md:flex items-center space-x-8">
+            <Link
+              className="text-sm font-medium hover:text-primary transition-colors"
+              href="/blog"
+            >
+              Blog
+            </Link>
+            <a
+>>>>>>> 373b079385ad0ef586a78c6c884cf75cc6763ea5
               className="text-sm font-medium hover:text-primary transition-colors"
               href="/bounties"
             >

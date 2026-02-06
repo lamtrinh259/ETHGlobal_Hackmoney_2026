@@ -39,5 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# docs
 docs/Clawork_PRD_v1.0.pdf
 docs/Clawork_Architecture_v1.md
+docs/Clawork_PRD_*
