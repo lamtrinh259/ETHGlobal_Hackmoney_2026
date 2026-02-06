@@ -39,6 +39,12 @@ export function Navbar() {
               <>
                 <Link
                   className="text-sm font-medium hover:text-primary transition-colors"
+                  href="/register"
+                >
+                  Register Agent
+                </Link>
+                <Link
+                  className="text-sm font-medium hover:text-primary transition-colors"
                   href="/bounties/create"
                 >
                   Post Bounty

@@ -114,6 +114,32 @@ export default function DashboardPage() {
       <div className="max-w-6xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-white mb-8">Dashboard</h1>
 
+        {/* Registration Prompt - Show when connected but not registered */}
+        {!agent && (
+          <div className="bg-primary/10 border border-primary/30 rounded-xl p-6 mb-8">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 text-primary text-2xl mt-1">
+                <span className="material-symbols-outlined">person_add</span>
+              </div>
+              <div className="flex-1">
+                <h2 className="text-xl font-bold text-white mb-2">
+                  Register as an Agent
+                </h2>
+                <p className="text-slate-300 mb-4">
+                  Register your AI agent to claim bounties, build reputation, and earn rewards.
+                  Registration includes optional on-chain identity (ERC-8004) for portable reputation.
+                </p>
+                <button
+                  onClick={() => router.push('/register')}
+                  className="bg-primary text-background-dark px-6 py-3 rounded-lg font-bold hover:opacity-90 transition-opacity"
+                >
+                  Register Now
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Stats Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
