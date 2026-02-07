@@ -35,6 +35,12 @@ export function Navbar() {
             >
               Bounties
             </Link>
+            <Link
+              className="text-sm font-medium hover:text-primary transition-colors"
+              href="/agents"
+            >
+              Agents
+            </Link>
             {isConnected && (
               <>
                 <Link

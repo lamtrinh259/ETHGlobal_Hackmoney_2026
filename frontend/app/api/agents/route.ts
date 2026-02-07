@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isAddress, type Address } from 'viem';
 import { db } from '@/lib/firebase';
-import { collection, doc, setDoc, getDoc, updateDoc, query, where, getDocs } from 'firebase/firestore';
+import { collection, doc, setDoc, getDoc, updateDoc, query, where, getDocs, orderBy, limit as firestoreLimit, startAfter } from 'firebase/firestore';
 import { getAgentId, publicClient } from '@/lib/contracts/erc8004';
 import { CONTRACTS } from '@/lib/contracts/addresses';
 import { IDENTITY_REGISTRY_ABI } from '@/lib/contracts/abis/identityRegistry';
@@ -106,37 +106,90 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET /api/agents - List all agents
+// GET /api/agents - List all agents with pagination
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+
+    // Parse query parameters
     const skill = searchParams.get('skill');
     const wallet = searchParams.get('wallet');
-    const limit = parseInt(searchParams.get('limit') || '50', 10);
+    const search = searchParams.get('search');
+    const minReputation = searchParams.get('minReputation') ? parseFloat(searchParams.get('minReputation')!) : null;
+    const verified = searchParams.get('verified') === 'true';
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const order = searchParams.get('order') || 'desc';
+    const cursor = searchParams.get('cursor');
+    const limitParam = parseInt(searchParams.get('limit') || '20', 10);
+    const limitNum = Math.min(limitParam, 100); // Max 100 per page
 
     const agentsRef = collection(db, 'agents');
-    const snapshot = await getDocs(agentsRef);
 
-    let agents = snapshot.docs.map(doc => doc.data());
+    // Build Firestore query with ordering
+    let q = query(
+      agentsRef,
+      orderBy(sortBy, order as 'asc' | 'desc'),
+      firestoreLimit(limitNum + 1) // Fetch one extra to detect hasMore
+    );
 
-    // Filter by wallet address if provided
+    // Apply cursor if provided
+    if (cursor) {
+      const cursorDoc = await getDoc(doc(db, 'agents', cursor));
+      if (cursorDoc.exists()) {
+        q = query(
+          agentsRef,
+          orderBy(sortBy, order as 'asc' | 'desc'),
+          startAfter(cursorDoc),
+          firestoreLimit(limitNum + 1)
+        );
+      }
+    }
+
+    const snapshot = await getDocs(q);
+    let agents = snapshot.docs.map(d => d.data());
+
+    // Detect if there are more results
+    const hasMore = agents.length > limitNum;
+    agents = agents.slice(0, limitNum);
+
+    // Apply in-memory filters (Firestore doesn't support all these as compound queries)
+
+    // Filter by wallet address
     if (wallet) {
       const walletLower = wallet.toLowerCase();
-      agents = agents.filter(a =>
-        a.walletAddress?.toLowerCase() === walletLower
-      );
+      agents = agents.filter(a => a.walletAddress?.toLowerCase() === walletLower);
     }
 
-    // Filter by skill if provided
+    // Filter by skill
     if (skill) {
-      const skillLower = skill.toLowerCase();
+      const skills = skill.split(',').map(s => s.toLowerCase().trim());
       agents = agents.filter(a =>
-        a.skills?.some((s: string) => s.toLowerCase().includes(skillLower))
+        skills.some(skill => a.skills?.some((s: string) => s.toLowerCase().includes(skill)))
       );
     }
 
-    // Apply limit
-    agents = agents.slice(0, limit);
+    // Filter by search (name)
+    if (search) {
+      const searchLower = search.toLowerCase();
+      agents = agents.filter(a => a.name?.toLowerCase().includes(searchLower));
+    }
+
+    // Filter by minimum reputation
+    if (minReputation !== null) {
+      agents = agents.filter(a => (a.reputation?.score || 0) >= minReputation);
+    }
+
+    // Filter by verified (ERC-8004)
+    if (verified) {
+      agents = agents.filter(a => a.erc8004Id && a.erc8004Id !== null);
+    }
+
+    // Get total count (for initial load only)
+    const totalSnapshot = await getDocs(collection(db, 'agents'));
+    const total = totalSnapshot.size;
+
+    // Determine next cursor
+    const nextCursor = hasMore && agents.length > 0 ? agents[agents.length - 1].id : null;
 
     return NextResponse.json({
       success: true,
@@ -149,7 +202,12 @@ export async function GET(request: NextRequest) {
         reputation: a.reputation,
         createdAt: a.createdAt,
       })),
-      total: agents.length,
+      pagination: {
+        total,
+        limit: limitNum,
+        hasMore,
+        nextCursor,
+      },
     });
 
   } catch (error) {
