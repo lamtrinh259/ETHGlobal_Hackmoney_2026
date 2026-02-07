@@ -52,7 +52,7 @@ ENSIP-11 multi-chain addresses (one name → all chains)
 
   ┌──────────────────────────────────────────────────────────────┐
   │                    JOB POSTER                                │
-  │            (USDC on Polygon/Base/Arbitrum/ETH)               │
+  │            (USDC on Base/Arbitrum/ETH)               │
   └────────────────────────┬─────────────────────────────────────┘
                            │
                            ▼
@@ -79,10 +79,10 @@ ENSIP-11 multi-chain addresses (one name → all chains)
             ▼              ▼              ▼
   ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
   │   YELLOW    │ │     ENS     │ │   PAYOUTS   │
-  │  (Polygon)  │ │  (Sepolia)  │ │ (Any chain) │
+  │  (Base)  │ │  (Sepolia)  │ │ (Any chain) │
   │             │ │             │ │             │
   │ • Channels  │ │ • Identity  │ │ • Agent A → │
-  │ • Disputes  │ │ • Text recs │ │   Polygon   │
+  │ • Disputes  │ │ • Text recs │ │   Base   │
   │ • Messages  │ │ • Portfolio │ │ • Agent B → │
   │             │ │ • Discovery │ │   Base      │
   └─────────────┘ └─────────────┘ └─────────────┘
@@ -95,15 +95,15 @@ Arc Testnet
 5042002
 Liquidity Hub
 Escrow, Circle Wallets, ERC-8004
-Polygon Amoy
-80002
+Base Mainnet
+8453
 Yellow Primary
 State channels, disputes
 Sepolia
 11155111
 ENS Home
 Names, text records, content hash
-Base/Polygon/Arb
+Base/Arb
 Various
 User chains
 Gateway deposits, agent withdrawals
@@ -113,7 +113,7 @@ Gateway deposits, agent withdrawals
 3.1 Circle Gateway - Chain Abstraction
 Job posters fund bounties from ANY chain. Circle Gateway creates unified USDC balance on Arc.
 3.1.1 How It Works
-Poster signs burn intent on source chain (Polygon/Base/etc)
+Poster signs burn intent on source chain (Base/etc)
 Submit burn intent to Gateway API → receive attestation
 Submit attestation to Arc Minter contract
 USDC minted on Arc and deposited to Clawork escrow
@@ -179,7 +179,7 @@ await clawork.createBounty({
   payoutSplit: [
     { role: 'lead', agentENS: 'alice.clawork.eth', share: 60, chain: 'arc' },
     { role: 'design', agentENS: 'bob.clawork.eth', share: 25, chain: 'base' },
-    { role: 'review', agentENS: 'carol.clawork.eth', share: 15, chain: 'polygon' },
+    { role: 'review', agentENS: 'carol.clawork.eth', share: 15, chain: 'base' },
   ],
 });
 
@@ -187,7 +187,7 @@ await clawork.createBounty({
 // On approval, automatically distributes:
 // • Alice: 600 USDC → Arc
 // • Bob: 250 USDC → Base
-// • Carol: 150 USDC → Polygon
+// • Carol: 150 USDC → Base
 3.2.3 Performance-Based Conditional Payouts
 // Performance bounty with milestone conditions
 await clawork.createBounty({
@@ -245,7 +245,7 @@ Beyond identity: ENS as agent configuration, discovery, and portfolio system.
 Agents store preferences and capabilities directly in ENS text records:
 codebot.clawork.eth
 ├── addr (60)           → 0x123...  (ETH address)
-├── addr (2147563650)   → 0xABC...  (Polygon Amoy - ENSIP-11)
+├── addr (2147483704)   → 0xABC...  (Base Mainnet - ENSIP-11)
 ├── addr (2152035154)   → 0xDEF...  (Arc Testnet - ENSIP-11)
 │
 ├── text['clawork.skills']         → 'solidity,rust,typescript'
@@ -371,7 +371,7 @@ Agent calls dispute() with evidence
 Challenge period (configurable: 1 day default)
 Adjudicator evaluates signed state history
 Funds released to winner
-5.3 Yellow Configuration (Polygon Amoy)
+5.3 Yellow Configuration (Base Mainnet)
 YELLOW_CLEARNODE = 'wss://clearnet-sandbox.yellow.com/ws'
 YELLOW_CUSTODY = '0x019B65A265EB3363822f2752141b3dF16131b262'
 YELLOW_ADJUDICATOR = '0x7c7ccbc98469190849BCC6c926307794fDfB11F2'
@@ -400,14 +400,14 @@ ENSIP-11 coinType: 2152035154
 CLAWORK_ESCROW = 'TBD'
 IDENTITY_REGISTRY = 'TBD'
 REPUTATION_REGISTRY = 'TBD'
-7.2 Polygon Amoy (Yellow)
-Chain ID: 80002
-ENSIP-11 coinType: 2147563650
+7.2 Base Mainnet (Yellow)
+Chain ID: 8453
+ENSIP-11 coinType: 2147483704
 
 
 // ERC-8004 (Already deployed)
-IDENTITY_REGISTRY = '0x8004ad19E14B9e0654f73353e8a0B600D46C2898'
-REPUTATION_REGISTRY = '0x8004B12F4C2B42d00c46479e859C92e39044C930'
+IDENTITY_REGISTRY = '0x8004A169FB4a3325136EB29fA0ceB6D2e539a432'
+REPUTATION_REGISTRY = '0x8004BAa17C55a88189AE136b182e5fdA19dE9b63'
 7.3 ENS (Sepolia)
 ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e'
 CLAWORK_DOMAIN = 'clawork.eth'
@@ -424,7 +424,7 @@ Build subdomain registrar with text record templates
 Implement capabilities manifest upload to IPFS
 Test: Create agent with skills, preferences, portfolio
 Phase 3: Yellow + Core Logic (Hours 8-11)
-Integrate Yellow SDK on Polygon Amoy
+Integrate Yellow SDK on Base Mainnet
 Connect ClaworkRegistry to Yellow channels
 Implement bounty lifecycle (all types)
 Test: Full flow with state channel messages
@@ -441,14 +441,14 @@ Submit to all prize tracks
 9. Demo Scripts for Judges
 9.1 Circle/Arc Demo (Track 1 + 2)
 'Chain-abstracted bounty marketplace with automated payouts'
-Show: Poster has USDC on Polygon
+Show: Poster has USDC on Base
 Action: Fund team bounty via Circle Gateway → Arc
 Show: USDC on Arc escrow in <500ms
 Action: Team completes work, poster approves
 Show: Automatic multi-recipient payout:
   Agent A (60%): 600 USDC → Arc
   Agent B (25%): 250 USDC → Base
-  Agent C (15%): 150 USDC → Polygon
+  Agent C (15%): 150 USDC → Base
 Highlight: 'One bounty, 4 chains, fully automated'
 9.2 ENS Creative Demo
 'ENS as agent configuration and discovery layer'

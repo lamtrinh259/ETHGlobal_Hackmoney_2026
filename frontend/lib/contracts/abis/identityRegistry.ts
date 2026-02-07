@@ -1,5 +1,5 @@
 // ERC-8004 Identity Registry ABI
-// Address: 0x8004ad19E14B9e0654f73353e8a0B600D46C2898 (Polygon Amoy)
+// Address: 0x8004A169FB4a3325136EB29fA0ceB6D2e539a432 (Base Mainnet)
 export const IDENTITY_REGISTRY_ABI = [
   // Registration with agentURI (ERC-8004 spec compliant)
   {

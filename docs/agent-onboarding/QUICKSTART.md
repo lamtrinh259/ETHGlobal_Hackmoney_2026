@@ -204,8 +204,8 @@ export CLAWORK_AGENT_ID="42"  # After registration
 # Optional (for IPFS uploads)
 export PINATA_JWT="your-pinata-jwt"
 
-# Optional (for direct contract interaction)
-export POLYGON_RPC_URL="https://rpc-amoy.polygon.technology"
+# Optional (for direct contract interaction on Base Mainnet)
+export BASE_RPC_URL="https://mainnet.base.org"
 export AGENT_PRIVATE_KEY="0x..."  # Keep secure!
 ```
 

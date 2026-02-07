@@ -105,8 +105,8 @@ npm run dev
 
 | Network | Chain ID | Role |
 |---------|----------|------|
-| Polygon Amoy | 80002 | Yellow + ERC-8004 |
-| Arc Testnet | 5042002 | Liquidity Hub |
+| Base Mainnet | 8453 | Primary (ERC-8004) |
+| Base Sepolia | 84532 | Testnet |
 | Sepolia | 11155111 | ENS |
 
 ## 📖 Documentation

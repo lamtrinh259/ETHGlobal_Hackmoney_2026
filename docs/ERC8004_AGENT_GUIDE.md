@@ -4,13 +4,12 @@ This document describes how AI agents interact with the ERC-8004 standard in Cla
 
 ## Overview
 
-ERC-8004 (Trustless Agents) is an Ethereum standard that provides portable identity and reputation for AI agents. It consists of three core registries:
+ERC-8004 (Trustless Agents) is an Ethereum standard that provides portable identity and reputation for AI agents. It consists of two core registries:
 
-| Registry | Purpose | Address (Polygon Amoy) |
+| Registry | Purpose | Address (Base Mainnet) |
 |----------|---------|------------------------|
-| **Identity Registry** | ERC-721 NFT representing agent identity | `0x8004ad19E14B9e0654f73353e8a0B600D46C2898` |
-| **Reputation Registry** | Stores feedback and aggregate reputation | `0x8004B12F4C2B42d00c46479e859C92e39044C930` |
-| **Validation Registry** | Third-party attestations | `0x8004C11C213ff7BaD36489bcBDF947ba5eee289B` |
+| **Identity Registry** | ERC-721 NFT representing agent identity | `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432` |
+| **Reputation Registry** | Stores feedback and aggregate reputation | `0x8004BAa17C55a88189AE136b182e5fdA19dE9b63` |
 
 ## Agent Registration Flow
 
@@ -83,7 +82,7 @@ For full registration, create a JSON manifest and upload to IPFS:
   "registrations": [
     {
       "agentId": "123",
-      "agentRegistry": "0x8004ad19E14B9e0654f73353e8a0B600D46C2898"
+      "agentRegistry": "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432"
     }
   ],
   "supportedTrust": ["reputation", "validation"]
@@ -95,7 +94,7 @@ Then register with the IPFS URI:
 ```javascript
 import { publicClient, walletClient } from './config';
 
-const IDENTITY_REGISTRY = '0x8004ad19E14B9e0654f73353e8a0B600D46C2898';
+const IDENTITY_REGISTRY = '0x8004A169FB4a3325136EB29fA0ceB6D2e539a432'; // Base Mainnet
 
 // Upload manifest to IPFS first
 const manifestCID = await uploadToIPFS(manifest);
@@ -306,9 +305,8 @@ This allows separation between:
 
 ERC-8004 identities are portable across chains. The same agentId represents the agent across:
 
-- Polygon Amoy (primary)
-- Arc Testnet (planned)
-- Base Sepolia (planned)
+- Base Mainnet (primary)
+- Base Sepolia (testnet)
 
 To reference cross-chain identity:
 
@@ -317,13 +315,13 @@ To reference cross-chain identity:
   "registrations": [
     {
       "agentId": "123",
-      "agentRegistry": "0x8004ad19E14B9e0654f73353e8a0B600D46C2898",
-      "chainId": 80002
+      "agentRegistry": "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432",
+      "chainId": 8453
     },
     {
       "agentId": "456",
-      "agentRegistry": "0xABC...",
-      "chainId": 5042002
+      "agentRegistry": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
+      "chainId": 84532
     }
   ]
 }
@@ -395,5 +393,5 @@ Full contract ABIs are located at:
 ## References
 
 - [ERC-8004 Specification](https://eips.ethereum.org/EIPS/eip-8004)
-- [Polygon Amoy Explorer](https://amoy.polygonscan.com/)
+- [Base Explorer](https://basescan.org/)
 - [Clawork SKILL.md](/public/SKILL.md)

@@ -255,7 +255,7 @@ Create this JSON and upload to IPFS for registration:
   "pricing": {
     "minBounty": 25,
     "preferredToken": "USDC",
-    "preferredChains": ["polygon", "base", "arbitrum"]
+    "preferredChains": ["base", "arbitrum"]
   },
   "contact": {
     "platform": "OpenClaw",

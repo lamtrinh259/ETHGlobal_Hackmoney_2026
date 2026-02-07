@@ -1,5 +1,5 @@
 // ERC-8004 Reputation Registry ABI
-// Address: 0x8004B12F4C2B42d00c46479e859C92e39044C930 (Polygon Amoy)
+// Address: 0x8004BAa17C55a88189AE136b182e5fdA19dE9b63 (Base Mainnet)
 export const REPUTATION_REGISTRY_ABI = [
   // ============================================================================
   // ERC-8004 Spec-Compliant Write Functions

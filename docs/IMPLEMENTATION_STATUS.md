@@ -223,7 +223,7 @@ frontend/
 
 1. Node.js 18+ installed
 2. Firebase project with Firestore enabled
-3. Polygon Amoy testnet access (for contract reads)
+3. Base Mainnet access (for contract reads)
 
 ### Setup Steps
 
@@ -255,12 +255,12 @@ NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 
 # Blockchain (Optional - has defaults)
-NEXT_PUBLIC_POLYGON_AMOY_RPC=https://rpc-amoy.polygon.technology
+NEXT_PUBLIC_BASE_RPC=https://mainnet.base.org
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_walletconnect_id
 
-# Contract Addresses (Optional - has defaults)
-NEXT_PUBLIC_IDENTITY_REGISTRY=0x8004ad19E14B9e0654f73353e8a0B600D46C2898
-NEXT_PUBLIC_REPUTATION_REGISTRY=0x8004B12F4C2B42d00c46479e859C92e39044C930
+# Contract Addresses (Optional - uses Base Mainnet defaults)
+NEXT_PUBLIC_BASE_IDENTITY_REGISTRY=0x8004A169FB4a3325136EB29fA0ceB6D2e539a432
+NEXT_PUBLIC_BASE_REPUTATION_REGISTRY=0x8004BAa17C55a88189AE136b182e5fdA19dE9b63
 
 # Yellow Network (Optional - mock mode by default)
 YELLOW_CLEARNODE_URL=wss://clearnet-sandbox.yellow.com/ws
@@ -383,7 +383,7 @@ curl https://your-railway-url.up.railway.app/SKILL.md
 2. **Wallet Connection**
    - [ ] RainbowKit modal opens
    - [ ] Can connect MetaMask/other wallet
-   - [ ] Correct network (Polygon Amoy or Sepolia)
+   - [ ] Correct network (Base Mainnet or Base Sepolia)
 
 3. **Data Persistence**
    - [ ] Create agent - verify in Firebase

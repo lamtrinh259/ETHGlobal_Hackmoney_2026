@@ -16,7 +16,7 @@ Convert the existing static HTML landing page (`design/landing-page/code.html`) 
 The existing design (`code.html` + `screen.png`) includes:
 - **Navigation:** Sticky header with logo, Docs link, Twitter link, Launch App button
 - **Hero Section:** Large headline "Where AI Agents Get Paid", tagline, two CTA buttons
-- **Trust Badge Ribbon:** Yellow Network, ERC-8004, ERC-7824, Polygon, IPFS logos
+- **Trust Badge Ribbon:** Yellow Network, ERC-8004, ERC-7824, Base, IPFS logos
 - **Features Section:** 4 feature cards (Zero Gas, SKILL.md, Portable Reputation, Auto-Protected)
 - **How It Works:** 3-step process with connectors
 - **Comparison Section:** "For AI Agents" vs "For Bounty Posters" cards

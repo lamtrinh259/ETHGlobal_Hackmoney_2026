@@ -1,5 +1,5 @@
 import { createPublicClient, http, type Address } from 'viem';
-import { polygonAmoy, baseSepolia, base } from 'viem/chains';
+import { baseSepolia, base } from 'viem/chains';
 import {
   ERC8004_CONTRACTS,
   CHAIN_CONFIG,
@@ -8,11 +8,9 @@ import {
 } from './addresses';
 import { IDENTITY_REGISTRY_ABI } from './abis/identityRegistry';
 import { REPUTATION_REGISTRY_ABI } from './abis/reputationRegistry';
-import { VALIDATION_REGISTRY_ABI } from './abis/validationRegistry';
 
 // Chain mapping for viem
 const CHAIN_MAP = {
-  polygonAmoy,
   baseSepolia,
   base,
 } as const;
@@ -30,7 +28,6 @@ function createClientForNetwork(network: SupportedNetwork) {
 
 // Pre-create clients for each network
 const clients = {
-  polygonAmoy: createClientForNetwork('polygonAmoy'),
   baseSepolia: createClientForNetwork('baseSepolia'),
   base: createClientForNetwork('base'),
 };
@@ -45,7 +42,7 @@ export function getContracts(network: SupportedNetwork = DEFAULT_NETWORK) {
   return ERC8004_CONTRACTS[network];
 }
 
-// Legacy: Default public client (uses DEFAULT_NETWORK which is now baseSepolia)
+// Legacy: Default public client (uses DEFAULT_NETWORK which is base)
 export const publicClient = clients[DEFAULT_NETWORK];
 
 // Current active network (can be changed at runtime)
@@ -166,130 +163,6 @@ export async function getAgentFeedback(agentId: bigint, network?: SupportedNetwo
   } catch (error) {
     console.error(`Error getting feedback on ${net}:`, error);
     return [];
-  }
-}
-
-// ============================================================================
-// Validation Registry Functions
-// ============================================================================
-
-export enum ValidationStatus {
-  Pending = 0,
-  Approved = 1,
-  Rejected = 2,
-  Cancelled = 3,
-}
-
-export interface ValidationInfo {
-  agentId: bigint;
-  validator: Address;
-  validationType: string;
-  status: ValidationStatus;
-  requestURI: string;
-  responseURI: string;
-  requestedAt: bigint;
-  respondedAt: bigint;
-}
-
-// Get validation status by request ID
-// Note: Validation Registry may not be deployed on all networks
-export async function getValidationStatus(requestId: bigint, network?: SupportedNetwork): Promise<ValidationInfo | null> {
-  const net = network ?? currentNetwork;
-  const client = getPublicClient(net);
-  const contracts = getContracts(net);
-
-  if (!contracts.VALIDATION_REGISTRY) {
-    console.warn(`Validation Registry not deployed on ${net}`);
-    return null;
-  }
-
-  try {
-    const result = await client.readContract({
-      address: contracts.VALIDATION_REGISTRY,
-      abi: VALIDATION_REGISTRY_ABI,
-      functionName: 'getValidationStatus',
-      args: [requestId],
-    });
-
-    const [
-      agentId,
-      validator,
-      validationType,
-      status,
-      requestURI,
-      responseURI,
-      requestedAt,
-      respondedAt,
-    ] = result as [bigint, Address, string, number, string, string, bigint, bigint];
-
-    return {
-      agentId,
-      validator,
-      validationType,
-      status: status as ValidationStatus,
-      requestURI,
-      responseURI,
-      requestedAt,
-      respondedAt,
-    };
-  } catch (error) {
-    console.error(`Error getting validation status on ${net}:`, error);
-    return null;
-  }
-}
-
-// Get all validation request IDs for an agent
-export async function getAgentValidations(agentId: bigint, network?: SupportedNetwork): Promise<bigint[]> {
-  const net = network ?? currentNetwork;
-  const client = getPublicClient(net);
-  const contracts = getContracts(net);
-
-  if (!contracts.VALIDATION_REGISTRY) {
-    console.warn(`Validation Registry not deployed on ${net}`);
-    return [];
-  }
-
-  try {
-    const requestIds = await client.readContract({
-      address: contracts.VALIDATION_REGISTRY,
-      abi: VALIDATION_REGISTRY_ABI,
-      functionName: 'getAgentValidations',
-      args: [agentId],
-    });
-    return requestIds as bigint[];
-  } catch (error) {
-    console.error(`Error getting agent validations on ${net}:`, error);
-    return [];
-  }
-}
-
-// Check if agent has a specific validation from a validator
-export async function hasValidation(
-  agentId: bigint,
-  validationType: string,
-  validator: Address,
-  network?: SupportedNetwork
-): Promise<boolean> {
-  const net = network ?? currentNetwork;
-  const client = getPublicClient(net);
-  const contracts = getContracts(net);
-
-  if (!contracts.VALIDATION_REGISTRY) {
-    console.warn(`Validation Registry not deployed on ${net}`);
-    return false;
-  }
-
-  try {
-    const result = await client.readContract({
-      address: contracts.VALIDATION_REGISTRY,
-      abi: VALIDATION_REGISTRY_ABI,
-      functionName: 'hasValidation',
-      args: [agentId, validationType, validator],
-    });
-    return result as boolean;
-  } catch (error) {
-    console.error(`Error checking validation on ${net}:`, error);
-    return false;
   }
 }
 

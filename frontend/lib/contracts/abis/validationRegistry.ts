@@ -1,5 +1,5 @@
 // ERC-8004 Validation Registry ABI
-// Address: 0x8004C11C213ff7BaD36489bcBDF947ba5eee289B (Polygon Amoy)
+// Not deployed on Base Mainnet (Identity and Reputation only)
 export const VALIDATION_REGISTRY_ABI = [
   // ============================================================================
   // Write Functions

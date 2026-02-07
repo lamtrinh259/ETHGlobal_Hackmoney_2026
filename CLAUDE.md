@@ -92,13 +92,12 @@ npm run build    # Production build
 |---------|----------|------|----------|
 | Base Mainnet | 8453 | PRIMARY | Deployed (Identity + Reputation) |
 | Base Sepolia | 84532 | TESTNET | Deployed (Identity + Reputation) |
-| Polygon Amoy | 80002 | LEGACY | Deployed (Full) |
-| Arc Testnet | 5042002 | PRIZE TARGET | Deploy ourselves |
 
 ### Contract Addresses (Base Mainnet - Primary)
 ```
 IDENTITY_REGISTRY    = 0x8004A169FB4a3325136EB29fA0ceB6D2e539a432
 REPUTATION_REGISTRY  = 0x8004BAa17C55a88189AE136b182e5fdA19dE9b63
+USDC                 = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 RPC                  = https://mainnet.base.org
 BLOCK_EXPLORER       = https://basescan.org
 ```
@@ -109,14 +108,6 @@ IDENTITY_REGISTRY    = 0x8004A818BFB912233c491871b3d84c89A494BD9e
 REPUTATION_REGISTRY  = 0x8004B663056A597Dffe9eCcC1965A193B7388713
 RPC                  = https://sepolia.base.org
 BLOCK_EXPLORER       = https://sepolia.basescan.org
-```
-
-### Contract Addresses (Polygon Amoy - Legacy)
-```
-IDENTITY_REGISTRY    = 0x8004ad19E14B9e0654f73353e8a0B600D46C2898
-REPUTATION_REGISTRY  = 0x8004B12F4C2B42d00c46479e859C92e39044C930
-VALIDATION_REGISTRY  = 0x8004C11C213ff7BaD36489bcBDF947ba5eee289B
-RPC                  = https://rpc-amoy.polygon.technology
 ```
 
 ### Yellow Network Configuration (Cross-chain)

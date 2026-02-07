@@ -5,7 +5,7 @@
  *
  * React context and hook for managing ERC-8004 network selection.
  * Provides functions for:
- * - Switching between supported networks (Base Sepolia, Base Mainnet, Polygon Amoy)
+ * - Switching between supported networks (Base Sepolia, Base Mainnet)
  * - Getting current network contracts and configuration
  * - Syncing with wallet network via wagmi
  */
@@ -22,13 +22,11 @@ import { setCurrentNetwork as setErc8004Network } from '@/lib/contracts/erc8004'
 
 // Chain ID to network mapping
 const CHAIN_ID_TO_NETWORK: Record<number, SupportedNetwork> = {
-  80002: 'polygonAmoy',
   84532: 'baseSepolia',
   8453: 'base',
 };
 
 const NETWORK_TO_CHAIN_ID: Record<SupportedNetwork, number> = {
-  polygonAmoy: 80002,
   baseSepolia: 84532,
   base: 8453,
 };
@@ -49,9 +47,6 @@ interface NetworkContextValue {
 
   // Contracts for current network
   contracts: typeof ERC8004_CONTRACTS[SupportedNetwork];
-
-  // Check if validation registry is available
-  hasValidationRegistry: boolean;
 
   // Actions
   switchNetwork: (network: SupportedNetwork) => Promise<void>;
@@ -89,7 +84,6 @@ export function NetworkProvider({
   const chainId = NETWORK_TO_CHAIN_ID[currentNetwork];
   const config = CHAIN_CONFIG[currentNetwork];
   const contracts = ERC8004_CONTRACTS[currentNetwork];
-  const hasValidationRegistry = contracts.VALIDATION_REGISTRY !== null;
   const isWalletSynced = walletChainId === chainId;
 
   // Sync erc8004.ts module state when network changes
@@ -142,7 +136,6 @@ export function NetworkProvider({
       blockExplorer: config.blockExplorer,
       rpcUrl: config.rpc,
       contracts,
-      hasValidationRegistry,
       switchNetwork,
       isSwitching: isSwitching || isChainSwitching,
       switchError,
@@ -153,7 +146,6 @@ export function NetworkProvider({
       chainId,
       config,
       contracts,
-      hasValidationRegistry,
       switchNetwork,
       isSwitching,
       isChainSwitching,
@@ -193,7 +185,6 @@ export function useSupportedNetworks() {
         network,
         ...CHAIN_CONFIG[network],
         contracts: ERC8004_CONTRACTS[network],
-        hasValidationRegistry: ERC8004_CONTRACTS[network].VALIDATION_REGISTRY !== null,
       })),
     []
   );
@@ -208,11 +199,9 @@ export function useNetworkAvailable(network: SupportedNetwork) {
     return {
       hasIdentityRegistry: contracts.IDENTITY_REGISTRY !== null,
       hasReputationRegistry: contracts.REPUTATION_REGISTRY !== null,
-      hasValidationRegistry: contracts.VALIDATION_REGISTRY !== null,
       isFullyDeployed:
         contracts.IDENTITY_REGISTRY !== null &&
-        contracts.REPUTATION_REGISTRY !== null &&
-        contracts.VALIDATION_REGISTRY !== null,
+        contracts.REPUTATION_REGISTRY !== null,
     };
   }, [network]);
 }

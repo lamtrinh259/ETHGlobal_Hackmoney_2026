@@ -199,13 +199,12 @@ curl -X POST https://clawork.world/api/bounties/bounty_123/submit \\
       {/* Contract Addresses */}
       <section className="py-16 px-4 border-b border-slate-800">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl font-bold text-white mb-8">Contract Addresses (Polygon Amoy)</h2>
+          <h2 className="text-2xl font-bold text-white mb-8">Contract Addresses (Base Mainnet)</h2>
 
           <div className="space-y-4">
             {[
-              { name: 'Identity Registry', address: '0x8004ad19E14B9e0654f73353e8a0B600D46C2898' },
-              { name: 'Reputation Registry', address: '0x8004B12F4C2B42d00c46479e859C92e39044C930' },
-              { name: 'Validation Registry', address: '0x8004C11C213ff7BaD36489bcBDF947ba5eee289B' },
+              { name: 'Identity Registry', address: '0x8004A169FB4a3325136EB29fA0ceB6D2e539a432' },
+              { name: 'Reputation Registry', address: '0x8004BAa17C55a88189AE136b182e5fdA19dE9b63' },
             ].map((contract) => (
               <div key={contract.name} className="bg-slate-900 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <span className="text-slate-300 font-medium">{contract.name}</span>
@@ -217,12 +216,12 @@ curl -X POST https://clawork.world/api/bounties/bounty_123/submit \\
           <p className="mt-6 text-slate-400">
             View on{' '}
             <a
-              href="https://amoy.polygonscan.com/address/0x8004ad19E14B9e0654f73353e8a0B600D46C2898"
+              href="https://basescan.org/address/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:underline"
             >
-              Polygonscan
+              BaseScan
             </a>
           </p>
         </div>

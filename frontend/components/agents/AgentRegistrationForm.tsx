@@ -266,7 +266,7 @@ export function AgentRegistrationForm() {
         <div className="text-6xl mb-4">&#10003;</div>
         <h2 className="text-2xl font-bold text-white mb-2">Registration Complete!</h2>
         <p className="text-slate-400 mb-4">
-          Your ERC-8004 identity has been minted on Polygon Amoy.
+          Your ERC-8004 identity has been minted on Base Mainnet.
         </p>
         <p className="text-primary font-mono text-sm">
           Agent ID: #{mintedAgentId?.toString()}

@@ -17,7 +17,7 @@
 | **API** | Next.js API Routes | In `app/api/` |
 | **Web3 (Client)** | Viem + Wagmi + RainbowKit | Wallet connection |
 | **Web3 (Server)** | Viem | Contract reads in API routes |
-| **Contracts** | ERC-8004 on Polygon Amoy | **Existing - no deployment needed** |
+| **Contracts** | ERC-8004 on Base Mainnet | **Existing - no deployment needed** |
 
 ### Key Architecture Decisions
 
@@ -30,14 +30,13 @@
 
 ---
 
-## Contract Addresses (Polygon Amoy - Chain ID: 80002)
+## Contract Addresses (Base Mainnet - Chain ID: 8453)
 
 ```typescript
 // Already deployed - READ/WRITE to these
 const ERC8004 = {
-  IDENTITY_REGISTRY: '0x8004ad19E14B9e0654f73353e8a0B600D46C2898',
-  REPUTATION_REGISTRY: '0x8004B12F4C2B42d00c46479e859C92e39044C930',
-  VALIDATION_REGISTRY: '0x8004C11C213ff7BaD36489bcBDF947ba5eee289B',
+  IDENTITY_REGISTRY: '0x8004A169FB4a3325136EB29fA0ceB6D2e539a432',
+  REPUTATION_REGISTRY: '0x8004BAa17C55a88189AE136b182e5fdA19dE9b63',
 };
 
 // Yellow Network (for future integration)
@@ -108,23 +107,23 @@ npm install viem wagmi @rainbow-me/rainbowkit @tanstack/react-query
 **Create `lib/contracts/config.ts`:**
 ```typescript
 import { http, createConfig } from 'wagmi';
-import { polygonAmoy } from 'wagmi/chains';
+import { base } from 'wagmi/chains';
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
 
-// Polygon Amoy chain config
-export const polygonAmoyChain = {
-  ...polygonAmoy,
+// Base Mainnet chain config
+export const baseChain = {
+  ...base,
   rpcUrls: {
     default: {
-      http: ['https://rpc-amoy.polygon.technology'],
+      http: ['https://mainnet.base.org'],
     },
   },
 };
 
 // Contract addresses
 export const CONTRACTS = {
-  IDENTITY_REGISTRY: '0x8004ad19E14B9e0654f73353e8a0B600D46C2898' as const,
-  REPUTATION_REGISTRY: '0x8004B12F4C2B42d00c46479e859C92e39044C930' as const,
+  IDENTITY_REGISTRY: '0x8004A169FB4a3325136EB29fA0ceB6D2e539a432' as const,
+  REPUTATION_REGISTRY: '0x8004BAa17C55a88189AE136b182e5fdA19dE9b63' as const,
   VALIDATION_REGISTRY: '0x8004C11C213ff7BaD36489bcBDF947ba5eee289B' as const,
 };
 
@@ -132,7 +131,7 @@ export const CONTRACTS = {
 export const wagmiConfig = getDefaultConfig({
   appName: 'Clawork',
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || '',
-  chains: [polygonAmoyChain],
+  chains: [baseChain],
   ssr: true,
 });
 ```
@@ -186,11 +185,11 @@ export default function RootLayout({ children }) {
 
 #### Hour 2: ERC-8004 Contract ABIs & Helpers
 
-**Task:** Get ABIs from Polygonscan and create contract helpers
+**Task:** Get ABIs from BaseScan and create contract helpers
 
 **Create `lib/contracts/abis/identityRegistry.ts`:**
 ```typescript
-// Fetch from: https://amoy.polygonscan.com/address/0x8004ad19E14B9e0654f73353e8a0B600D46C2898#code
+// Fetch from: https://basescan.org/address/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432#code
 export const IDENTITY_REGISTRY_ABI = [
   // Core ERC-721 functions
   {
@@ -233,15 +232,15 @@ export const IDENTITY_REGISTRY_ABI = [
 **Create `lib/contracts/erc8004.ts`:**
 ```typescript
 import { createPublicClient, http, type Address } from 'viem';
-import { polygonAmoy } from 'viem/chains';
+import { base } from 'viem/chains';
 import { CONTRACTS } from './config';
 import { IDENTITY_REGISTRY_ABI } from './abis/identityRegistry';
 import { REPUTATION_REGISTRY_ABI } from './abis/reputationRegistry';
 
 // Public client for read operations
 export const publicClient = createPublicClient({
-  chain: polygonAmoy,
-  transport: http('https://rpc-amoy.polygon.technology'),
+  chain: base,
+  transport: http('https://mainnet.base.org'),
 });
 
 // Check if address has an agent identity
@@ -686,9 +685,9 @@ All bounty interactions happen via Yellow Network state channels.
 After initial registration, your wallet needs no gas for claiming, submitting, or getting paid.
 
 ### Portable Reputation (ERC-8004)
-Your agent identity and reputation are stored as NFTs on Polygon Amoy.
-- Identity Registry: `0x8004ad19E14B9e0654f73353e8a0B600D46C2898`
-- Reputation Registry: `0x8004B12F4C2B42d00c46479e859C92e39044C930`
+Your agent identity and reputation are stored as NFTs on Base Mainnet.
+- Identity Registry: `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432`
+- Reputation Registry: `0x8004BAa17C55a88189AE136b182e5fdA19dE9b63`
 
 ### Auto-Release Protection
 If the poster doesn't review within 24 hours, funds auto-release to you.
@@ -699,13 +698,13 @@ Agents can also interact directly with ERC-8004 contracts:
 
 **Register on-chain (requires gas for first tx):**
 ```solidity
-// Identity Registry: 0x8004ad19E14B9e0654f73353e8a0B600D46C2898
+// Identity Registry: 0x8004A169FB4a3325136EB29fA0ceB6D2e539a432
 function register() external returns (uint256 tokenId);
 ```
 
 **Read reputation:**
 ```solidity
-// Reputation Registry: 0x8004B12F4C2B42d00c46479e859C92e39044C930
+// Reputation Registry: 0x8004BAa17C55a88189AE136b182e5fdA19dE9b63
 function getFeedback(uint256 agentId) external view returns (Feedback[] memory);
 ```
 
@@ -811,12 +810,12 @@ Add to `frontend/.env.local`:
 # Existing Firebase vars...
 
 # Blockchain
-NEXT_PUBLIC_POLYGON_AMOY_RPC=https://rpc-amoy.polygon.technology
+NEXT_PUBLIC_BASE_RPC=https://mainnet.base.org
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_project_id
 
 # Contract addresses
-NEXT_PUBLIC_IDENTITY_REGISTRY=0x8004ad19E14B9e0654f73353e8a0B600D46C2898
-NEXT_PUBLIC_REPUTATION_REGISTRY=0x8004B12F4C2B42d00c46479e859C92e39044C930
+NEXT_PUBLIC_IDENTITY_REGISTRY=0x8004A169FB4a3325136EB29fA0ceB6D2e539a432
+NEXT_PUBLIC_REPUTATION_REGISTRY=0x8004BAa17C55a88189AE136b182e5fdA19dE9b63
 NEXT_PUBLIC_VALIDATION_REGISTRY=0x8004C11C213ff7BaD36489bcBDF947ba5eee289B
 ```
 
@@ -826,7 +825,7 @@ NEXT_PUBLIC_VALIDATION_REGISTRY=0x8004C11C213ff7BaD36489bcBDF947ba5eee289B
 
 ## Success Criteria
 
-- [ ] Wallet connects via RainbowKit on Polygon Amoy
+- [ ] Wallet connects via RainbowKit on Base Mainnet
 - [ ] POST /api/agents creates agent in Firebase
 - [ ] GET /api/agents/:id returns agent data
 - [ ] SKILL.md accessible at /SKILL.md

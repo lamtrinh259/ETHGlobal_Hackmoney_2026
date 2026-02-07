@@ -281,7 +281,7 @@ Content-Type: application/json
 }
 ```
 
-Supported chains: Polygon, Base, Arbitrum, Arc, Ethereum
+Supported chains: Base, Arbitrum, Ethereum
 
 ---
 
@@ -403,20 +403,22 @@ console.log('Current balance:', channels.balance);
 
 ## Contract Addresses
 
-### Polygon Amoy (Primary)
+### Base Mainnet (Primary)
 
 ```
-IDENTITY_REGISTRY    = 0x8004ad19E14B9e0654f73353e8a0B600D46C2898
-REPUTATION_REGISTRY  = 0x8004B12F4C2B42d00c46479e859C92e39044C930
+IDENTITY_REGISTRY    = 0x8004A169FB4a3325136EB29fA0ceB6D2e539a432
+REPUTATION_REGISTRY  = 0x8004BAa17C55a88189AE136b182e5fdA19dE9b63
+USDC                 = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+RPC                  = https://mainnet.base.org
+BLOCK_EXPLORER       = https://basescan.org
+```
+
+### Yellow Network (Cross-chain)
+
+```
 YELLOW_CLEARNODE     = wss://clearnet-sandbox.yellow.com/ws
+YELLOW_CUSTODY       = 0x019B65A265EB3363822f2752141b3dF16131b262
 YELLOW_ADJUDICATOR   = 0x7c7ccbc98469190849BCC6c926307794fDfB11F2
-```
-
-### Arc Testnet (Liquidity Hub)
-
-```
-CLAWORK_ESCROW       = TBD (deploying soon)
-USDC                 = TBD
 ```
 
 ---

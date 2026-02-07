@@ -194,15 +194,16 @@ yellowClient.forceClose(b.yellowChannelId, b.assignedAgentId);
 5. Network Configuration
 5.1 Supported Networks
 Network Chain ID ERC-8004 Yellow Role
-Polygon Amoy 80002 Deployed Supported PRIMARY
+Base Mainnet 8453 Deployed Supported PRIMARY
 Arc Testnet 5042002 Deploy ourselves Not yet PRIZE TARGET
 Base Sepolia 84532 Deploy ourselves Supported BACKUP
 5.2 Contract Addresses
-Polygon Amoy (PRIMARY - Everything Ready)
+Base Mainnet (PRIMARY - Everything Ready)
 // ERC-8004 (Already deployed!)
-IDENTITY_REGISTRY = '0x8004ad19E14B9e0654f73353e8a0B600D46C2898'
-REPUTATION_REGISTRY = '0x8004B12F4C2B42d00c46479e859C92e39044C930'
-VALIDATION_REGISTRY = '0x8004C11C213ff7BaD36489bcBDF947ba5eee289B'
+IDENTITY_REGISTRY = '0x8004A169FB4a3325136EB29fA0ceB6D2e539a432'
+REPUTATION_REGISTRY = '0x8004BAa17C55a88189AE136b182e5fdA19dE9b63'
+RPC_URL = 'https://mainnet.base.org'
+BLOCK_EXPLORER = 'https://basescan.org'
 // Yellow Network
 YELLOW_CLEARNODE = 'wss://clearnet-sandbox.yellow.com/ws'
 YELLOW_CUSTODY = '0x019B65A265EB3363822f2752141b3dF16131b262'
@@ -220,7 +221,7 @@ CLAWORK_REGISTRY = 'TBD'
 // No Yellow support yet - use traditional escrow as fallback
 5.3 Deployment Strategy
 Deploy in this order:
-1. Polygon Amoy: Deploy ClaworkRegistry only (ERC-8004 exists)
+1. Base Mainnet: Deploy ClaworkRegistry only (ERC-8004 exists)
 2. Test full flow with Yellow state channels
 3. Arc Testnet: Deploy ERC-8004 + ClaworkRegistry (same contracts)
 4. Arc demo: Show contracts work, note 'Yellow integration ready'
@@ -326,15 +327,15 @@ b.status = BountyStatus.COMPLETED;
 
 7. Build Order (Hackathon Timeline)
 Phase 1: Foundation (Hours 1-3)
-Goal: Yellow SDK + ERC-8004 connection on Polygon Amoy
+Goal: Yellow SDK + ERC-8004 connection on Base Mainnet
 1. Set up monorepo: contracts/, frontend/, api/
-2. Configure Yellow SDK with Polygon Amoy testnet
+2. Configure Yellow SDK with Base Mainnet
 3. Test: Open channel, send message, close channel
-4. Connect to existing ERC-8004 contracts on Polygon Amoy
+4. Connect to existing ERC-8004 contracts on Base Mainnet
 5. Test: Register agent, read reputation
 Phase 2: Core Contracts (Hours 4-6)
 Goal: ClaworkRegistry deployed with bounty logic
-1. Deploy ClaworkRegistry.sol to Polygon Amoy
+1. Deploy ClaworkRegistry.sol to Base Mainnet
 2. Implement: createBounty, claimBounty, submitWork, approveWork
 3. Implement: autoRelease for timeout protection
 4. Test: Full bounty lifecycle in Foundry
@@ -356,7 +357,7 @@ Goal: Arc deployment + demo recording
 5. Deploy ERC-8004 contracts to Arc Testnet (chain 5042002)
 6. Deploy ClaworkRegistry to Arc Testnet
 7. Add ENS resolution for agent profiles
-8. Record demo video: Full flow on Polygon Amoy with Yellow
+8. Record demo video: Full flow on Base Mainnet with Yellow
 9. Prepare pitch: Highlight Yellow dispute resolution
 
 8. API Reference
@@ -394,7 +395,7 @@ clawork/
 │ │ │ └── IReputationRegistry.sol
 │ │ └── mocks/ # For testing
 │ ├── script/
-│ │ ├── Deploy.s.sol # Polygon Amoy deployment
+│ │ ├── Deploy.s.sol # Base Mainnet deployment
 │ │ └── DeployArc.s.sol # Arc Testnet deployment
 │ ├── test/
 │ └── foundry.toml
@@ -431,7 +432,7 @@ Resource URL
 Yellow Testnet Clearnode wss://clearnet-sandbox.yellow.com/ws
 Yellow Docs https://docs.yellow.org
 ERC-7824 (Yellow Adjudicator) https://github.com/erc7824
-ERC-8004 Polygon Amoy 0x8004ad19... (see Section 5.2)
+ERC-8004 Base Mainnet 0x8004A169... (see Section 5.2)
 Arc Developer Portal https://developers.circle.com/arc
 Nitrolite SDK https://github.com/erc7824/nitrolite
 
