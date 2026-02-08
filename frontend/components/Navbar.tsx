@@ -1,7 +1,7 @@
 'use client';
 
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { ClaworkLogo } from "./icons/ClaworkLogo";
+import Image from 'next/image';
 import Link from 'next/link';
 import { useAccount } from 'wagmi';
 
@@ -101,9 +101,13 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-3">
-              <div className="text-primary">
-                <ClaworkLogo size={32} />
-              </div>
+              <Image
+                src="/Clawork_logo.jpg"
+                alt="Clawork logo"
+                width={32}
+                height={32}
+                className="rounded-sm"
+              />
               <span className="text-xl font-bold tracking-tight text-white">
                 Clawork
               </span>

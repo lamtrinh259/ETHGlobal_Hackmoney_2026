@@ -3,7 +3,6 @@ export function TrustBadges() {
     "Yellow Network",
     "ERC-8004",
     "ERC-7824",
-    "Base",
     "IPFS",
   ];
 

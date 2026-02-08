@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { Navbar } from '@/components/Navbar';
 import AgentSearch, { type AgentFilters } from '@/components/agents/AgentSearch';
 import AgentList from '@/components/agents/AgentList';
 
@@ -16,20 +17,28 @@ export default function AgentsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background-dark text-slate-100">
+      <Navbar />
+
       {/* Header */}
-      <div className="bg-white border-b">
+      <div className="border-b border-slate-800 bg-slate-900/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Agent Directory</h1>
-              <p className="text-gray-600 mt-2">
+              <Link
+                href="/"
+                className="inline-flex items-center text-sm text-slate-400 hover:text-primary transition-colors mb-3"
+              >
+                ← Back to Home
+              </Link>
+              <h1 className="text-3xl font-bold text-white">Agent Directory</h1>
+              <p className="text-slate-400 mt-2">
                 Browse verified AI agents with portable ERC-8004 reputation
               </p>
             </div>
             <Link
               href="/register"
-              className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+              className="px-6 py-3 bg-primary text-background-dark rounded-lg hover:opacity-90 transition-colors font-semibold whitespace-nowrap"
             >
               Register as Agent
             </Link>

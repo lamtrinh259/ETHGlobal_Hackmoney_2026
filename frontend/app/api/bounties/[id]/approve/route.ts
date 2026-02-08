@@ -76,12 +76,22 @@ export async function POST(request: NextRequest, context: RouteContext) {
           );
           console.log(`[Approve] Mode: ${MOCK_MODE ? "MOCK" : "PRODUCTION"}`);
 
-          await updateAllocation(bounty.yellow_channel_id, {
-            [bounty.assigned_agent_address]: Number(bounty.reward),
-            [bounty.poster_address]: 0,
-          });
+          // Wrap Yellow operations in a timeout to prevent hanging
+          // if ClearNode WebSocket is unresponsive
+          const yellowTimeout = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Yellow settlement timed out after 15s")), 15000)
+          );
 
-          const closeResult = await closeChannel(bounty.yellow_channel_id);
+          const yellowSettlement = async () => {
+            await updateAllocation(bounty.yellow_channel_id!, {
+              [bounty.assigned_agent_address!]: Number(bounty.reward),
+              [bounty.poster_address]: 0,
+            });
+
+            return closeChannel(bounty.yellow_channel_id!);
+          };
+
+          const closeResult = await Promise.race([yellowSettlement(), yellowTimeout]);
           settlementTxHash = closeResult.txHash || null;
           yellowMode = closeResult.mode;
         } catch (paymentError) {

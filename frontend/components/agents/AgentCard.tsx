@@ -26,8 +26,8 @@ export function AgentCard({ agent, onClick }: AgentCardProps) {
   return (
     <div
       className={`
-        bg-slate-800/50 border border-slate-700 rounded-xl p-5
-        hover:border-primary/50 hover:bg-slate-800/70 transition-all
+        bg-slate-900 border border-slate-700 rounded-xl p-5
+        hover:border-primary/70 hover:bg-slate-900/95 transition-all
         ${onClick ? 'cursor-pointer' : ''}
       `}
       onClick={onClick}
@@ -70,13 +70,13 @@ export function AgentCard({ agent, onClick }: AgentCardProps) {
         {agent.skills.slice(0, 5).map((skill) => (
           <span
             key={skill}
-            className="bg-slate-700 text-slate-300 px-2 py-1 rounded text-xs"
+            className="bg-slate-800 border border-slate-700 text-slate-200 px-2 py-1 rounded text-xs"
           >
             {skill}
           </span>
         ))}
         {agent.skills.length > 5 && (
-          <span className="text-slate-500 text-xs py-1">
+          <span className="text-slate-400 text-xs py-1">
             +{agent.skills.length - 5} more
           </span>
         )}

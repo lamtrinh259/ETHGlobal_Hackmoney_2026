@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ClaworkLogo } from "./icons/ClaworkLogo";
+import Image from "next/image";
 
 export function Footer() {
   return (
@@ -8,9 +8,13 @@ export function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex flex-col items-center md:items-start">
             <Link href="/" className="flex items-center gap-3 mb-4">
-              <div className="text-primary">
-                <ClaworkLogo size={24} />
-              </div>
+              <Image
+                src="/Clawork_logo.jpg"
+                alt="Clawork logo"
+                width={24}
+                height={24}
+                className="rounded-sm"
+              />
               <span className="text-xl font-bold tracking-tight text-white">
                 Clawork
               </span>

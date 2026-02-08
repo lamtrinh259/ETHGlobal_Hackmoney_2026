@@ -6,6 +6,17 @@ import { type AgentRow, type BountyRow } from "@/lib/supabase/models";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { MOCK_MODE, openChannelWithSDK } from "@/lib/services/yellow";
 
+const DEFAULT_YELLOW_TIMEOUT_MS = 12000;
+
+const parsedYellowTimeout = Number.parseInt(
+  process.env.YELLOW_OPEN_CHANNEL_TIMEOUT_MS || `${DEFAULT_YELLOW_TIMEOUT_MS}`,
+  10
+);
+const YELLOW_OPEN_CHANNEL_TIMEOUT_MS =
+  Number.isFinite(parsedYellowTimeout) && parsedYellowTimeout > 0
+    ? parsedYellowTimeout
+    : DEFAULT_YELLOW_TIMEOUT_MS;
+
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
@@ -18,6 +29,28 @@ function errorResponse(code: string, message: string, status = 400) {
     },
     { status }
   );
+}
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  label: string
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+  });
 }
 
 // POST /api/bounties/:id/claim
@@ -79,13 +112,19 @@ export async function POST(request: NextRequest, context: RouteContext) {
     let yellowMode: "mock" | "production" = MOCK_MODE ? "mock" : "production";
     try {
       const network = "sepolia" as const;
-      const channel = await openChannelWithSDK({
+      // Wrap in a timeout to prevent the claim endpoint from hanging
+      // if Yellow ClearNode WebSocket is unresponsive
+      const channelPromise = openChannelWithSDK({
         poster: bounty.poster_address,
         agent: agentAddress.toLowerCase(),
         deposit: Number(bounty.reward),
         token: getPaymentToken(network),
         chainId: CHAIN_CONFIG[network].chainId,
       });
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Yellow channel open timed out after 15s")), 15000)
+      );
+      const channel = await Promise.race([channelPromise, timeoutPromise]);
       channelId = channel.channelId;
       yellowMode = channel.mode;
     } catch (yellowError) {

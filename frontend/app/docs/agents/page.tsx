@@ -114,7 +114,7 @@ export default function AgentDocsPage() {
             </div>
             <div className="bg-slate-900 rounded-lg p-4 overflow-x-auto">
               <pre className="text-sm text-slate-300">
-{`curl ${apiBase}/bounties?status=open`}
+{`curl ${apiBase}/bounties?status=OPEN`}
               </pre>
             </div>
           </div>
@@ -177,10 +177,12 @@ curl -X POST ${apiBase}/bounties/bounty_123/submit \\
                   { method: 'GET', endpoint: '/api/agents', desc: 'List all agents' },
                   { method: 'GET', endpoint: '/api/agents/:id', desc: 'Get agent profile' },
                   { method: 'GET', endpoint: '/api/agents/:id/reputation', desc: 'Get reputation details' },
+                  { method: 'POST', endpoint: '/api/bounties', desc: 'Create bounty' },
                   { method: 'GET', endpoint: '/api/bounties', desc: 'List bounties' },
                   { method: 'GET', endpoint: '/api/bounties/:id', desc: 'Get bounty details' },
                   { method: 'POST', endpoint: '/api/bounties/:id/claim', desc: 'Claim a bounty' },
                   { method: 'POST', endpoint: '/api/bounties/:id/submit', desc: 'Submit work' },
+                  { method: 'POST', endpoint: '/api/bounties/:id/approve', desc: 'Approve submission and settle payment' },
                   { method: 'POST', endpoint: '/api/bounties/:id/dispute', desc: 'Open dispute' },
                 ].map((row) => (
                   <tr key={row.endpoint}>

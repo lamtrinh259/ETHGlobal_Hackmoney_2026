@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
+import { LandingGuide } from "@/components/LandingGuide";
 import { TrustBadges } from "@/components/TrustBadges";
 import { Features } from "@/components/Features";
 import { HowItWorks } from "@/components/HowItWorks";
@@ -12,6 +13,7 @@ export default function Home() {
     <main className="bg-background-dark text-slate-100">
       <Navbar />
       <Hero />
+      <LandingGuide />
       <TrustBadges />
       <Features />
       <HowItWorks />

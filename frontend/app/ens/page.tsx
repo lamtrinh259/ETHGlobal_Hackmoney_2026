@@ -139,7 +139,7 @@ export default function EnsManagerPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">ENS Text Record Manager</h1>
           <p className="text-slate-400">
-            Configure `clawork.*` text records on Sepolia for prize demo readiness.
+            Configure `clawork.*` text records on Sepolia for agent profiles (for example, `youragent.clawork.eth`).
           </p>
         </div>
 
@@ -158,7 +158,7 @@ export default function EnsManagerPage() {
                 type="text"
                 value={ensName}
                 onChange={(event) => setEnsName(event.target.value)}
-                placeholder="youragent.eth"
+                placeholder="youragent.clawork.eth"
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:border-primary focus:outline-none"
               />
               <p className="text-slate-500 text-xs mt-2">
