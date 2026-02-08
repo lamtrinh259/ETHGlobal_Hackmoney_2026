@@ -6,6 +6,17 @@ import { type AgentRow, type BountyRow } from "@/lib/supabase/models";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { MOCK_MODE, openChannelWithSDK } from "@/lib/services/yellow";
 
+const DEFAULT_YELLOW_TIMEOUT_MS = 12000;
+
+const parsedYellowTimeout = Number.parseInt(
+  process.env.YELLOW_OPEN_CHANNEL_TIMEOUT_MS || `${DEFAULT_YELLOW_TIMEOUT_MS}`,
+  10
+);
+const YELLOW_OPEN_CHANNEL_TIMEOUT_MS =
+  Number.isFinite(parsedYellowTimeout) && parsedYellowTimeout > 0
+    ? parsedYellowTimeout
+    : DEFAULT_YELLOW_TIMEOUT_MS;
+
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
@@ -18,6 +29,28 @@ function errorResponse(code: string, message: string, status = 400) {
     },
     { status }
   );
+}
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  label: string
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+  });
 }
 
 // POST /api/bounties/:id/claim
