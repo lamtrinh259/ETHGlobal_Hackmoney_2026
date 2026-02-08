@@ -8,6 +8,7 @@ interface Agent {
   id: string;
   walletAddress: string;
   name: string;
+  ensName?: string | null;
   skills: string[];
   erc8004Id: string | null;
   reputation: {

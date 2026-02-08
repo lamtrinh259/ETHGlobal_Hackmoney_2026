@@ -1,29 +1,43 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { NextRequest, NextResponse } from "next/server";
+
+import { mapAgentRow, type AgentRow } from "@/lib/supabase/models";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
+function errorResponse(code: string, message: string, status = 400) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: { code, message },
+    },
+    { status }
+  );
+}
+
 // GET /api/agents/:id - Get single agent
-export async function GET(
-  request: NextRequest,
-  context: RouteContext
-) {
+export async function GET(_request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
+    const supabase = getSupabaseServerClient();
 
-    const agentDoc = await getDoc(doc(db, 'agents', id));
+    const { data, error } = await supabase
+      .from("agents")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
 
-    if (!agentDoc.exists()) {
-      return NextResponse.json(
-        { success: false, error: { code: 'AGENT_NOT_FOUND', message: 'Agent not found' } },
-        { status: 404 }
-      );
+    if (error) {
+      throw error;
     }
 
-    const agent = agentDoc.data();
+    if (!data) {
+      return errorResponse("AGENT_NOT_FOUND", "Agent not found", 404);
+    }
+
+    const agent = mapAgentRow(data as AgentRow);
 
     return NextResponse.json({
       success: true,
@@ -31,6 +45,7 @@ export async function GET(
         id: agent.id,
         walletAddress: agent.walletAddress,
         name: agent.name,
+        ensName: agent.ensName,
         skills: agent.skills,
         erc8004Id: agent.erc8004Id,
         reputation: agent.reputation,
@@ -38,72 +53,73 @@ export async function GET(
         updatedAt: agent.updatedAt,
       },
     });
-
   } catch (error) {
-    console.error('Get agent error:', error);
-    return NextResponse.json(
-      { success: false, error: { code: 'SERVER_ERROR', message: 'Failed to get agent' } },
-      { status: 500 }
-    );
+    console.error("Get agent error:", error);
+    return errorResponse("SERVER_ERROR", "Failed to get agent", 500);
   }
 }
 
 // PATCH /api/agents/:id - Update agent
-export async function PATCH(
-  request: NextRequest,
-  context: RouteContext
-) {
+export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
     const body = await request.json();
-    const { name, skills } = body;
-
-    const agentRef = doc(db, 'agents', id);
-    const agentDoc = await getDoc(agentRef);
-
-    if (!agentDoc.exists()) {
-      return NextResponse.json(
-        { success: false, error: { code: 'AGENT_NOT_FOUND', message: 'Agent not found' } },
-        { status: 404 }
-      );
-    }
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    const ensName = typeof body.ensName === "string" ? body.ensName.trim() : null;
+    const skills = Array.isArray(body.skills) ? (body.skills as string[]) : null;
 
     const updates: Record<string, unknown> = {
-      updatedAt: Date.now(),
+      updated_at: Date.now(),
     };
 
-    if (name && typeof name === 'string') {
-      updates.name = name.trim();
+    if (name) {
+      updates.name = name;
     }
 
-    if (skills && Array.isArray(skills) && skills.length > 0) {
-      updates.skills = skills.map((s: string) => s.toLowerCase().trim());
+    if (ensName !== null) {
+      updates.ens_name = ensName || null;
     }
 
-    await updateDoc(agentRef, updates);
+    if (skills && skills.length > 0) {
+      updates.skills = skills
+        .map((value) => value.toLowerCase().trim())
+        .filter((value) => value.length > 0);
+    }
 
-    const updatedDoc = await getDoc(agentRef);
-    const agent = updatedDoc.data();
+    const supabase = getSupabaseServerClient();
+
+    const { data: updatedRows, error } = await supabase
+      .from("agents")
+      .update(updates)
+      .eq("id", id)
+      .select("*");
+
+    if (error) {
+      throw error;
+    }
+
+    if (!updatedRows || updatedRows.length === 0) {
+      return errorResponse("AGENT_NOT_FOUND", "Agent not found", 404);
+    }
+
+    const agent = mapAgentRow(updatedRows[0] as AgentRow);
 
     return NextResponse.json({
       success: true,
       agent: {
-        id: agent?.id,
-        walletAddress: agent?.walletAddress,
-        name: agent?.name,
-        skills: agent?.skills,
-        erc8004Id: agent?.erc8004Id,
-        reputation: agent?.reputation,
-        updatedAt: agent?.updatedAt,
+        id: agent.id,
+        walletAddress: agent.walletAddress,
+        name: agent.name,
+        ensName: agent.ensName,
+        skills: agent.skills,
+        erc8004Id: agent.erc8004Id,
+        reputation: agent.reputation,
+        updatedAt: agent.updatedAt,
       },
-      message: 'Agent updated successfully',
+      message: "Agent updated successfully",
     });
-
   } catch (error) {
-    console.error('Update agent error:', error);
-    return NextResponse.json(
-      { success: false, error: { code: 'SERVER_ERROR', message: 'Failed to update agent' } },
-      { status: 500 }
-    );
+    console.error("Update agent error:", error);
+    return errorResponse("SERVER_ERROR", "Failed to update agent", 500);
   }
 }

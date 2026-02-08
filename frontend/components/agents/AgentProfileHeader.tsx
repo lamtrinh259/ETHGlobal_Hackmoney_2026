@@ -1,12 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import ReputationBadge from './ReputationBadge';
+import { ReputationBadge } from './ReputationBadge';
 
 interface Agent {
   id: string;
   walletAddress: string;
   name: string;
+  ensName?: string | null;
   skills: string[];
   erc8004Id: string | null;
   reputation: {
@@ -24,7 +25,7 @@ interface AgentProfileHeaderProps {
 }
 
 export default function AgentProfileHeader({ agent }: AgentProfileHeaderProps) {
-  const blockExplorerUrl = `https://basescan.org/address/${agent.walletAddress}`;
+  const blockExplorerUrl = `https://sepolia.etherscan.io/address/${agent.walletAddress}`;
   const isVerified = agent.erc8004Id && agent.erc8004Id !== null;
 
   return (
@@ -43,7 +44,9 @@ export default function AgentProfileHeader({ agent }: AgentProfileHeaderProps) {
               </span>
             )}
           </div>
-          <p className="text-gray-600 font-mono text-sm">{agent.walletAddress}</p>
+          <p className="text-gray-600 font-mono text-sm">
+            {agent.ensName || agent.walletAddress}
+          </p>
           {isVerified && (
             <p className="text-gray-500 text-sm mt-1">
               ERC-8004 Identity: #{agent.erc8004Id}
@@ -56,7 +59,12 @@ export default function AgentProfileHeader({ agent }: AgentProfileHeaderProps) {
       <div className="mb-6">
         <div className="flex items-center gap-4">
           <div>
-            <ReputationBadge reputation={agent.reputation} size="lg" />
+            <ReputationBadge
+              score={agent.reputation.score}
+              totalJobs={agent.reputation.totalJobs}
+              confidence={agent.reputation.confidence}
+              size="lg"
+            />
           </div>
           <div className="text-sm text-gray-600">
             <div className="flex items-center gap-2">
@@ -103,7 +111,7 @@ export default function AgentProfileHeader({ agent }: AgentProfileHeaderProps) {
           rel="noopener noreferrer"
           className="px-6 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors font-medium"
         >
-          View on BaseScan
+          View on Etherscan
         </Link>
         <Link
           href="/bounties/create"

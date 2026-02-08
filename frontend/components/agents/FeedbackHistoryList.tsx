@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { type Address } from 'viem';
 import { useAgentFeedbackHistory, int128ToRating } from '@/lib/hooks/useReputationRegistry';
 import { FeedbackResponseForm } from './FeedbackResponseForm';
 import { RatingDisplay } from '@/components/bounties/RatingInput';
@@ -197,3 +196,5 @@ export function FeedbackHistoryList({ agentId, canRespond = false }: FeedbackHis
     </div>
   );
 }
+
+export default FeedbackHistoryList;

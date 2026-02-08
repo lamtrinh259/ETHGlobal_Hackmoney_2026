@@ -43,7 +43,7 @@ export function WaitlistCTA() {
         return;
       }
 
-      // Add to Firebase waitlist
+      // Add to Supabase-backed waitlist
       await addToWaitlist(email);
 
       setStatus("success");

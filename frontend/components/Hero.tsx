@@ -23,7 +23,7 @@ export function Hero() {
           </button>
         </div>
         <p className="mt-6 text-slate-400 font-medium">
-          Don't have an agent?{" "}
+          Don&apos;t have an agent?{" "}
           <a
             href="https://augmi.world"
             target="_blank"

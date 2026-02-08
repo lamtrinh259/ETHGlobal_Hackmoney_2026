@@ -1,90 +1,98 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { NextRequest, NextResponse } from "next/server";
+
+import { type BountyRow } from "@/lib/supabase/models";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
+function errorResponse(code: string, message: string, status = 400) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: { code, message },
+    },
+    { status }
+  );
+}
+
 // POST /api/bounties/:id/submit
-export async function POST(
-  request: NextRequest,
-  context: RouteContext
-) {
+export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
     const body = await request.json();
-    const { agentId, deliverableCID, message } = body;
+
+    const agentId = typeof body.agentId === "string" ? body.agentId : "";
+    const deliverableCID =
+      typeof body.deliverableCID === "string" ? body.deliverableCID : null;
+    const message = typeof body.message === "string" ? body.message : null;
 
     if (!agentId) {
-      return NextResponse.json(
-        { success: false, error: { code: 'INVALID_AGENT', message: 'Agent ID required' } },
-        { status: 400 }
-      );
+      return errorResponse("INVALID_AGENT", "Agent ID required");
     }
 
     if (!deliverableCID && !message) {
-      return NextResponse.json(
-        { success: false, error: { code: 'INVALID_DELIVERABLE', message: 'Deliverable CID or message required' } },
-        { status: 400 }
+      return errorResponse(
+        "INVALID_DELIVERABLE",
+        "Deliverable CID or message required"
       );
     }
 
-    const bountyRef = doc(db, 'bounties', id);
-    const bountyDoc = await getDoc(bountyRef);
+    const supabase = getSupabaseServerClient();
+    const { data: bounty, error: bountyError } = await supabase
+      .from<BountyRow>("bounties")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
 
-    if (!bountyDoc.exists()) {
-      return NextResponse.json(
-        { success: false, error: { code: 'BOUNTY_NOT_FOUND', message: 'Bounty not found' } },
-        { status: 404 }
+    if (bountyError) {
+      throw bountyError;
+    }
+
+    if (!bounty) {
+      return errorResponse("BOUNTY_NOT_FOUND", "Bounty not found", 404);
+    }
+
+    if (bounty.status !== "CLAIMED") {
+      return errorResponse(
+        "INVALID_STATUS",
+        "Bounty must be claimed to submit work"
       );
     }
 
-    const bounty = bountyDoc.data();
-
-    if (bounty.status !== 'CLAIMED') {
-      return NextResponse.json(
-        { success: false, error: { code: 'INVALID_STATUS', message: 'Bounty must be claimed to submit work' } },
-        { status: 400 }
-      );
+    if (bounty.assigned_agent_id !== agentId) {
+      return errorResponse("NOT_ASSIGNED", "You are not assigned to this bounty", 403);
     }
 
-    if (bounty.assignedAgentId !== agentId) {
-      return NextResponse.json(
-        { success: false, error: { code: 'NOT_ASSIGNED', message: 'You are not assigned to this bounty' } },
-        { status: 403 }
-      );
+    if (bounty.submit_deadline && Date.now() > bounty.submit_deadline) {
+      return errorResponse("DEADLINE_PASSED", "Submit deadline has passed");
     }
 
-    // Check deadline
-    if (bounty.submitDeadline && Date.now() > bounty.submitDeadline) {
-      return NextResponse.json(
-        { success: false, error: { code: 'DEADLINE_PASSED', message: 'Submit deadline has passed' } },
-        { status: 400 }
-      );
-    }
+    const reviewDeadline = Date.now() + 24 * 60 * 60 * 1000;
 
-    // Update bounty
-    const reviewDeadline = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
-    await updateDoc(bountyRef, {
-      status: 'SUBMITTED',
-      deliverableCID: deliverableCID || null,
-      deliverableMessage: message || null,
-      submittedAt: Date.now(),
-      reviewDeadline,
-    });
+    const { error: updateError } = await supabase
+      .from<BountyRow>("bounties")
+      .update({
+        status: "SUBMITTED",
+        deliverable_cid: deliverableCID || null,
+        deliverable_message: message || null,
+        submitted_at: Date.now(),
+        review_deadline: reviewDeadline,
+      })
+      .eq("id", id);
+
+    if (updateError) {
+      throw updateError;
+    }
 
     return NextResponse.json({
       success: true,
       reviewDeadline,
-      message: 'Work submitted! Poster has 24 hours to review.',
+      message: "Work submitted! Poster has 24 hours to review.",
     });
-
   } catch (error) {
-    console.error('Submit work error:', error);
-    return NextResponse.json(
-      { success: false, error: { code: 'SERVER_ERROR', message: 'Failed to submit work' } },
-      { status: 500 }
-    );
+    console.error("Submit work error:", error);
+    return errorResponse("SERVER_ERROR", "Failed to submit work", 500);
   }
 }

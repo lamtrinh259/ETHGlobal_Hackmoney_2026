@@ -41,6 +41,12 @@ export function Navbar() {
             >
               Agents
             </Link>
+            <Link
+              className="text-sm font-medium hover:text-primary transition-colors"
+              href="/ens"
+            >
+              ENS
+            </Link>
             {isConnected && (
               <>
                 <Link

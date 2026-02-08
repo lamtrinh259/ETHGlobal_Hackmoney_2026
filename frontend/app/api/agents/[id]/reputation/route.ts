@@ -1,33 +1,51 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import { getAgentReputation, getAgentFeedback } from '@/lib/contracts/erc8004';
+import { NextRequest, NextResponse } from "next/server";
+
+import { getAgentFeedback, getAgentReputation } from "@/lib/contracts/erc8004";
+import {
+  mapAgentRow,
+  normalizeReputation,
+  type AgentRow,
+} from "@/lib/supabase/models";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
+function responseError(code: string, message: string, status = 400) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: { code, message },
+    },
+    { status }
+  );
+}
+
 // GET /api/agents/:id/reputation - Get agent reputation
-export async function GET(
-  request: NextRequest,
-  context: RouteContext
-) {
+export async function GET(_request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
+    const supabase = getSupabaseServerClient();
 
-    const agentDoc = await getDoc(doc(db, 'agents', id));
+    const { data, error } = await supabase
+      .from("agents")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
 
-    if (!agentDoc.exists()) {
-      return NextResponse.json(
-        { success: false, error: { code: 'AGENT_NOT_FOUND', message: 'Agent not found' } },
-        { status: 404 }
-      );
+    if (error) {
+      throw error;
     }
 
-    const agent = agentDoc.data();
+    if (!data) {
+      return responseError("AGENT_NOT_FOUND", "Agent not found", 404);
+    }
 
-    // Try to get on-chain reputation if agent has ERC-8004 ID
-    let onChainReputation = null;
+    const agent = mapAgentRow(data as AgentRow);
+    const reputation = normalizeReputation(agent.reputation);
+
+    let onChainReputation: { score: number; totalFeedback: number } | null = null;
     let onChainFeedback: Array<{
       from: string;
       rating: number;
@@ -46,31 +64,21 @@ export async function GET(
         }
 
         const feedback = await getAgentFeedback(BigInt(agent.erc8004Id));
-        onChainFeedback = feedback.map(f => ({
-          from: f.from,
-          rating: f.rating,
-          comment: f.comment,
-          timestamp: f.timestamp.toString(),
+        onChainFeedback = feedback.map((entry) => ({
+          from: entry.from,
+          rating: entry.rating,
+          comment: entry.comment,
+          timestamp: entry.timestamp.toString(),
         }));
-      } catch (err) {
-        console.warn('Could not fetch on-chain reputation:', err);
+      } catch (chainError) {
+        console.warn("Could not fetch on-chain reputation:", chainError);
       }
     }
-
-    // Firebase reputation (cached/aggregate)
-    const reputation = agent.reputation || {
-      score: 0,
-      totalJobs: 0,
-      positive: 0,
-      negative: 0,
-      confidence: 0,
-    };
 
     return NextResponse.json({
       success: true,
       agentId: id,
       erc8004Id: agent.erc8004Id,
-      // Cached reputation from Firebase
       reputation: {
         score: reputation.score,
         totalJobs: reputation.totalJobs,
@@ -81,19 +89,16 @@ export async function GET(
           negative: reputation.negative,
         },
       },
-      // On-chain data (ERC-8004)
-      onChain: onChainReputation ? {
-        score: onChainReputation.score,
-        totalFeedback: onChainReputation.totalFeedback,
-        feedback: onChainFeedback,
-      } : null,
+      onChain: onChainReputation
+        ? {
+            score: onChainReputation.score,
+            totalFeedback: onChainReputation.totalFeedback,
+            feedback: onChainFeedback,
+          }
+        : null,
     });
-
   } catch (error) {
-    console.error('Get reputation error:', error);
-    return NextResponse.json(
-      { success: false, error: { code: 'SERVER_ERROR', message: 'Failed to get reputation' } },
-      { status: 500 }
-    );
+    console.error("Get reputation error:", error);
+    return responseError("SERVER_ERROR", "Failed to get reputation", 500);
   }
 }

@@ -1,108 +1,131 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { isAddress, type Address } from 'viem';
-import { db } from '@/lib/firebase';
-import { collection, doc, setDoc, getDoc, updateDoc, query, where, getDocs, orderBy, limit as firestoreLimit, startAfter } from 'firebase/firestore';
-import { getAgentId, publicClient } from '@/lib/contracts/erc8004';
-import { CONTRACTS } from '@/lib/contracts/addresses';
-import { IDENTITY_REGISTRY_ABI } from '@/lib/contracts/abis/identityRegistry';
+import { NextRequest, NextResponse } from "next/server";
+import { isAddress, type Address } from "viem";
+
+import { IDENTITY_REGISTRY_ABI } from "@/lib/contracts/abis/identityRegistry";
+import { CONTRACTS } from "@/lib/contracts/addresses";
+import { getAgentId, publicClient } from "@/lib/contracts/erc8004";
+import {
+  DEFAULT_REPUTATION,
+  mapAgentRow,
+  normalizeReputation,
+  type AgentRow,
+} from "@/lib/supabase/models";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+
+function badRequest(code: string, message: string, status = 400) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: { code, message },
+    },
+    { status }
+  );
+}
+
+function normalizeSkills(skills: string[]): string[] {
+  return skills
+    .map((value) => value.toLowerCase().trim())
+    .filter((value) => value.length > 0);
+}
 
 // POST /api/agents - Register a new agent
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { wallet, name, skills } = body;
+    const wallet = typeof body.wallet === "string" ? body.wallet : "";
+    const name = typeof body.name === "string" ? body.name : "";
+    const skills = Array.isArray(body.skills) ? (body.skills as string[]) : [];
+    const ensName = typeof body.ensName === "string" ? body.ensName.trim() : "";
 
-    // Validate input
     if (!wallet || !isAddress(wallet)) {
-      return NextResponse.json(
-        { success: false, error: { code: 'INVALID_WALLET', message: 'Valid wallet address required' } },
-        { status: 400 }
-      );
+      return badRequest("INVALID_WALLET", "Valid wallet address required");
     }
 
-    if (!name || typeof name !== 'string' || name.trim().length === 0) {
-      return NextResponse.json(
-        { success: false, error: { code: 'INVALID_NAME', message: 'Agent name required' } },
-        { status: 400 }
-      );
+    if (!name.trim()) {
+      return badRequest("INVALID_NAME", "Agent name required");
     }
 
-    if (!skills || !Array.isArray(skills) || skills.length === 0) {
-      return NextResponse.json(
-        { success: false, error: { code: 'INVALID_SKILLS', message: 'At least one skill required' } },
-        { status: 400 }
-      );
+    if (!skills.length) {
+      return badRequest("INVALID_SKILLS", "At least one skill required");
     }
 
     const walletLower = wallet.toLowerCase();
+    const normalizedSkills = normalizeSkills(skills);
 
-    // Check if already registered on-chain (ERC-8004)
-    let existingId: bigint | null = null;
-    try {
-      existingId = await getAgentId(wallet as `0x${string}`);
-    } catch (err) {
-      console.warn('Could not check on-chain registration:', err);
+    if (!normalizedSkills.length) {
+      return badRequest("INVALID_SKILLS", "At least one non-empty skill required");
     }
 
-    // Check if already in our database
-    const agentsRef = collection(db, 'agents');
-    const q = query(agentsRef, where('walletAddress', '==', walletLower));
-    const snapshot = await getDocs(q);
+    const supabase = getSupabaseServerClient();
 
-    if (!snapshot.empty) {
-      const existingAgent = snapshot.docs[0].data();
+    let existingId: bigint | null = null;
+    try {
+      existingId = await getAgentId(wallet as Address);
+    } catch (err) {
+      console.warn("Could not check on-chain registration:", err);
+    }
+
+    const { data: existingAgent, error: existingAgentError } = await supabase
+      .from("agents")
+      .select("*")
+      .eq("wallet_address", walletLower)
+      .maybeSingle();
+
+    if (existingAgentError) {
+      throw existingAgentError;
+    }
+
+    if (existingAgent) {
+      const mapped = mapAgentRow(existingAgent as AgentRow);
       return NextResponse.json({
         success: true,
-        agentId: existingAgent.id,
-        erc8004Id: existingAgent.erc8004Id || null,
-        walletAddress: existingAgent.walletAddress,
-        name: existingAgent.name,
-        skills: existingAgent.skills,
-        reputation: existingAgent.reputation,
-        message: 'Agent already registered',
+        agentId: mapped.id,
+        erc8004Id: mapped.erc8004Id || null,
+        walletAddress: mapped.walletAddress,
+        name: mapped.name,
+        skills: mapped.skills,
+        ensName: mapped.ensName,
+        reputation: mapped.reputation,
+        message: "Agent already registered",
       });
     }
 
-    // Create new agent in Firebase
     const agentId = `agent_${Date.now()}`;
-    const agentData = {
-      id: agentId,
-      walletAddress: walletLower,
-      name: name.trim(),
-      skills: skills.map((s: string) => s.toLowerCase().trim()),
-      erc8004Id: existingId?.toString() || null,
-      reputation: {
-        score: 0,
-        totalJobs: 0,
-        positive: 0,
-        negative: 0,
-        confidence: 0,
-      },
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
+    const now = Date.now();
 
-    await setDoc(doc(db, 'agents', agentId), agentData);
+    const { error: insertError } = await supabase.from("agents").insert({
+      id: agentId,
+      wallet_address: walletLower,
+      name: name.trim(),
+      ens_name: ensName || null,
+      skills: normalizedSkills,
+      erc8004_id: existingId?.toString() || null,
+      reputation: DEFAULT_REPUTATION,
+      feedback_history: [],
+      created_at: now,
+      updated_at: now,
+    });
+
+    if (insertError) {
+      throw insertError;
+    }
 
     return NextResponse.json({
       success: true,
       agentId,
       erc8004Id: existingId?.toString() || null,
       walletAddress: walletLower,
-      name: agentData.name,
-      skills: agentData.skills,
-      reputation: agentData.reputation,
+      name: name.trim(),
+      ensName: ensName || null,
+      skills: normalizedSkills,
+      reputation: DEFAULT_REPUTATION,
       message: existingId
-        ? 'Agent registered! ERC-8004 identity found on-chain.'
-        : 'Agent registered! Connect wallet to mint ERC-8004 identity.',
+        ? "Agent registered! ERC-8004 identity found on-chain."
+        : "Agent registered! Connect wallet to mint ERC-8004 identity.",
     });
-
   } catch (error) {
-    console.error('Agent registration error:', error);
-    return NextResponse.json(
-      { success: false, error: { code: 'SERVER_ERROR', message: 'Failed to register agent' } },
-      { status: 500 }
-    );
+    console.error("Agent registration error:", error);
+    return badRequest("SERVER_ERROR", "Failed to register agent", 500);
   }
 }
 
@@ -110,97 +133,100 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const skill = searchParams.get("skill");
+    const wallet = searchParams.get("wallet");
+    const search = searchParams.get("search");
+    const minReputation = searchParams.get("minReputation")
+      ? parseFloat(searchParams.get("minReputation") as string)
+      : null;
+    const verified = searchParams.get("verified") === "true";
+    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const order = searchParams.get("order") === "asc" ? "asc" : "desc";
+    const cursor = searchParams.get("cursor");
+    const limitParam = parseInt(searchParams.get("limit") || "20", 10);
+    const limitNum = Math.min(Number.isFinite(limitParam) ? limitParam : 20, 100);
 
-    // Parse query parameters
-    const skill = searchParams.get('skill');
-    const wallet = searchParams.get('wallet');
-    const search = searchParams.get('search');
-    const minReputation = searchParams.get('minReputation') ? parseFloat(searchParams.get('minReputation')!) : null;
-    const verified = searchParams.get('verified') === 'true';
-    const sortBy = searchParams.get('sortBy') || 'createdAt';
-    const order = searchParams.get('order') || 'desc';
-    const cursor = searchParams.get('cursor');
-    const limitParam = parseInt(searchParams.get('limit') || '20', 10);
-    const limitNum = Math.min(limitParam, 100); // Max 100 per page
+    const sortColumn =
+      sortBy === "name"
+        ? "name"
+        : sortBy === "updatedAt"
+          ? "updated_at"
+          : "created_at";
 
-    const agentsRef = collection(db, 'agents');
+    const supabase = getSupabaseServerClient();
+    const { data, error } = await supabase
+      .from("agents")
+      .select("*")
+      .order(sortColumn, { ascending: order === "asc" });
 
-    // Build Firestore query with ordering
-    let q = query(
-      agentsRef,
-      orderBy(sortBy, order as 'asc' | 'desc'),
-      firestoreLimit(limitNum + 1) // Fetch one extra to detect hasMore
-    );
-
-    // Apply cursor if provided
-    if (cursor) {
-      const cursorDoc = await getDoc(doc(db, 'agents', cursor));
-      if (cursorDoc.exists()) {
-        q = query(
-          agentsRef,
-          orderBy(sortBy, order as 'asc' | 'desc'),
-          startAfter(cursorDoc),
-          firestoreLimit(limitNum + 1)
-        );
-      }
+    if (error) {
+      throw error;
     }
 
-    const snapshot = await getDocs(q);
-    let agents = snapshot.docs.map(d => d.data());
+    let agents = (data ?? []).map((row) => mapAgentRow(row as AgentRow));
 
-    // Detect if there are more results
-    const hasMore = agents.length > limitNum;
-    agents = agents.slice(0, limitNum);
+    if (sortBy === "reputation" || sortBy === "reputation.score") {
+      agents.sort((a, b) => {
+        const diff = a.reputation.score - b.reputation.score;
+        return order === "asc" ? diff : -diff;
+      });
+    }
 
-    // Apply in-memory filters (Firestore doesn't support all these as compound queries)
-
-    // Filter by wallet address
     if (wallet) {
       const walletLower = wallet.toLowerCase();
-      agents = agents.filter(a => a.walletAddress?.toLowerCase() === walletLower);
+      agents = agents.filter((agent) => agent.walletAddress.toLowerCase() === walletLower);
     }
 
-    // Filter by skill
     if (skill) {
-      const skills = skill.split(',').map(s => s.toLowerCase().trim());
-      agents = agents.filter(a =>
-        skills.some(skill => a.skills?.some((s: string) => s.toLowerCase().includes(skill)))
+      const requestedSkills = skill
+        .split(",")
+        .map((value) => value.toLowerCase().trim())
+        .filter(Boolean);
+      agents = agents.filter((agent) =>
+        requestedSkills.some((requested) =>
+          agent.skills.some((agentSkill) => agentSkill.toLowerCase().includes(requested))
+        )
       );
     }
 
-    // Filter by search (name)
     if (search) {
-      const searchLower = search.toLowerCase();
-      agents = agents.filter(a => a.name?.toLowerCase().includes(searchLower));
+      const normalizedSearch = search.toLowerCase();
+      agents = agents.filter((agent) => agent.name.toLowerCase().includes(normalizedSearch));
     }
 
-    // Filter by minimum reputation
-    if (minReputation !== null) {
-      agents = agents.filter(a => (a.reputation?.score || 0) >= minReputation);
+    if (minReputation !== null && Number.isFinite(minReputation)) {
+      agents = agents.filter((agent) => agent.reputation.score >= minReputation);
     }
 
-    // Filter by verified (ERC-8004)
     if (verified) {
-      agents = agents.filter(a => a.erc8004Id && a.erc8004Id !== null);
+      agents = agents.filter((agent) => Boolean(agent.erc8004Id));
     }
 
-    // Get total count (for initial load only)
-    const totalSnapshot = await getDocs(collection(db, 'agents'));
-    const total = totalSnapshot.size;
+    const total = agents.length;
 
-    // Determine next cursor
-    const nextCursor = hasMore && agents.length > 0 ? agents[agents.length - 1].id : null;
+    if (cursor) {
+      const cursorIndex = agents.findIndex((agent) => agent.id === cursor);
+      if (cursorIndex >= 0) {
+        agents = agents.slice(cursorIndex + 1);
+      }
+    }
+
+    const hasMore = agents.length > limitNum;
+    const paginated = agents.slice(0, limitNum);
+    const nextCursor = hasMore && paginated.length > 0 ? paginated[paginated.length - 1].id : null;
 
     return NextResponse.json({
       success: true,
-      agents: agents.map(a => ({
-        id: a.id,
-        walletAddress: a.walletAddress,
-        name: a.name,
-        skills: a.skills,
-        erc8004Id: a.erc8004Id,
-        reputation: a.reputation,
-        createdAt: a.createdAt,
+      agents: paginated.map((agent) => ({
+        id: agent.id,
+        walletAddress: agent.walletAddress,
+        name: agent.name,
+        ensName: agent.ensName,
+        skills: agent.skills,
+        erc8004Id: agent.erc8004Id,
+        reputation: normalizeReputation(agent.reputation),
+        createdAt: agent.createdAt,
+        updatedAt: agent.updatedAt,
       })),
       pagination: {
         total,
@@ -209,13 +235,9 @@ export async function GET(request: NextRequest) {
         nextCursor,
       },
     });
-
   } catch (error) {
-    console.error('List agents error:', error);
-    return NextResponse.json(
-      { success: false, error: { code: 'SERVER_ERROR', message: 'Failed to list agents' } },
-      { status: 500 }
-    );
+    console.error("List agents error:", error);
+    return badRequest("SERVER_ERROR", "Failed to list agents", 500);
   }
 }
 
@@ -223,89 +245,74 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
-    const { agentId, erc8004Id, wallet } = body;
+    const agentId = typeof body.agentId === "string" ? body.agentId : "";
+    const erc8004Id = typeof body.erc8004Id === "string" ? body.erc8004Id : "";
+    const wallet = typeof body.wallet === "string" ? body.wallet : "";
 
-    // Validate input
-    if (!agentId || typeof agentId !== 'string') {
-      return NextResponse.json(
-        { success: false, error: { code: 'INVALID_AGENT_ID', message: 'Agent ID required' } },
-        { status: 400 }
-      );
+    if (!agentId) {
+      return badRequest("INVALID_AGENT_ID", "Agent ID required");
     }
 
-    if (!erc8004Id || typeof erc8004Id !== 'string') {
-      return NextResponse.json(
-        { success: false, error: { code: 'INVALID_ERC8004_ID', message: 'ERC-8004 ID required' } },
-        { status: 400 }
-      );
+    if (!erc8004Id) {
+      return badRequest("INVALID_ERC8004_ID", "ERC-8004 ID required");
     }
 
     if (!wallet || !isAddress(wallet)) {
-      return NextResponse.json(
-        { success: false, error: { code: 'INVALID_WALLET', message: 'Valid wallet address required' } },
-        { status: 400 }
-      );
+      return badRequest("INVALID_WALLET", "Valid wallet address required");
     }
 
-    // Verify the wallet owns this NFT on-chain
     try {
       const owner = await publicClient.readContract({
         address: CONTRACTS.IDENTITY_REGISTRY as Address,
         abi: IDENTITY_REGISTRY_ABI,
-        functionName: 'ownerOf',
+        functionName: "ownerOf",
         args: [BigInt(erc8004Id)],
       });
 
       if ((owner as string).toLowerCase() !== wallet.toLowerCase()) {
-        return NextResponse.json(
-          { success: false, error: { code: 'NOT_OWNER', message: 'Wallet does not own this NFT' } },
-          { status: 403 }
-        );
+        return badRequest("NOT_OWNER", "Wallet does not own this ERC-8004 identity", 403);
       }
-    } catch (err) {
-      console.warn('Could not verify NFT ownership:', err);
-      // Continue anyway for mock mode / testnet issues
+    } catch (chainError) {
+      console.warn("Could not verify ERC-8004 ownership on-chain:", chainError);
     }
 
-    // Get the agent document
-    const agentRef = doc(db, 'agents', agentId);
-    const agentDoc = await getDoc(agentRef);
+    const supabase = getSupabaseServerClient();
+    const { data: updatedRows, error } = await supabase
+      .from("agents")
+      .update({
+        erc8004_id: erc8004Id,
+        updated_at: Date.now(),
+      })
+      .eq("id", agentId)
+      .eq("wallet_address", wallet.toLowerCase())
+      .select("*");
 
-    if (!agentDoc.exists()) {
-      return NextResponse.json(
-        { success: false, error: { code: 'AGENT_NOT_FOUND', message: 'Agent not found' } },
-        { status: 404 }
-      );
+    if (error) {
+      throw error;
     }
 
-    const agentData = agentDoc.data();
-
-    // Verify the wallet matches
-    if (agentData.walletAddress !== wallet.toLowerCase()) {
-      return NextResponse.json(
-        { success: false, error: { code: 'WALLET_MISMATCH', message: 'Wallet does not match agent' } },
-        { status: 403 }
-      );
+    if (!updatedRows || updatedRows.length === 0) {
+      return badRequest("AGENT_NOT_FOUND", "Agent not found", 404);
     }
 
-    // Update with ERC-8004 ID
-    await updateDoc(agentRef, {
-      erc8004Id,
-      updatedAt: Date.now(),
-    });
+    const updated = mapAgentRow(updatedRows[0] as AgentRow);
 
     return NextResponse.json({
       success: true,
-      agentId,
-      erc8004Id,
-      message: 'Agent updated with ERC-8004 identity',
+      agent: {
+        id: updated.id,
+        walletAddress: updated.walletAddress,
+        name: updated.name,
+        ensName: updated.ensName,
+        skills: updated.skills,
+        erc8004Id: updated.erc8004Id,
+        reputation: updated.reputation,
+        updatedAt: updated.updatedAt,
+      },
+      message: "ERC-8004 identity linked successfully",
     });
-
   } catch (error) {
-    console.error('Update agent error:', error);
-    return NextResponse.json(
-      { success: false, error: { code: 'SERVER_ERROR', message: 'Failed to update agent' } },
-      { status: 500 }
-    );
+    console.error("Update agent ERC-8004 error:", error);
+    return badRequest("SERVER_ERROR", "Failed to update agent", 500);
   }
 }

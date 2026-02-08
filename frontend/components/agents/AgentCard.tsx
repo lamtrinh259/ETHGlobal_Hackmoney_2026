@@ -6,6 +6,7 @@ interface Agent {
   id: string;
   name: string;
   walletAddress: string;
+  ensName?: string | null;
   skills: string[];
   reputation: {
     score: number;
@@ -37,7 +38,9 @@ export function AgentCard({ agent, onClick }: AgentCardProps) {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h3 className="font-semibold text-white text-lg">{agent.name}</h3>
-          <p className="text-slate-400 text-sm font-mono">{shortAddress}</p>
+          <p className="text-slate-400 text-sm font-mono">
+            {agent.ensName || shortAddress}
+          </p>
         </div>
 
         {/* ERC-8004 Badge */}
@@ -79,3 +82,5 @@ export function AgentCard({ agent, onClick }: AgentCardProps) {
     </div>
   );
 }
+
+export default AgentCard;
