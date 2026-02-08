@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabaseServerClient();
 
     // Fetch submitted bounties and filter in memory.
-    // Our lightweight Supabase REST client currently supports `eq` but not `lt`/`or`.
+    // Our lightweight Supabase REST client supports `eq` but not `lt`/`or`.
     const { data: submittedBounties, error: queryError } = await supabase
       .from<BountyRow>("bounties")
       .select("*")
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
         bounty.dispute_status !== "PENDING"
     );
 
-    if (!expiredBounties || expiredBounties.length === 0) {
+    if (expiredBounties.length === 0) {
       return NextResponse.json({
         success: true,
         processed: 0,
