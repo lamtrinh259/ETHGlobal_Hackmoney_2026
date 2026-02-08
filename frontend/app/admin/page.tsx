@@ -7,7 +7,7 @@ import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import type { Bounty } from '@/lib/types/bounty';
 
-type Tab = 'disputes' | 'auto-release' | 'all';
+type Tab = 'disputes' | 'auto-release' | 'ens-sync' | 'all';
 
 const ADMIN_WALLET = process.env.NEXT_PUBLIC_ADMIN_WALLET?.toLowerCase();
 
@@ -16,6 +16,32 @@ interface AutoReleaseResult {
   status: 'released' | 'failed';
   settlementTxHash?: string;
   error?: string;
+}
+
+interface EnsSyncResult {
+  agentId: string;
+  ensName: string;
+  status: 'synced' | 'already_onchain' | 'failed' | 'skipped';
+  txHashes?: Record<string, string | null>;
+  error?: string;
+}
+
+interface EnsSyncSummary {
+  success: boolean;
+  synced: number;
+  alreadyOnchain: number;
+  failed: number;
+  skipped: number;
+  results: EnsSyncResult[];
+}
+
+interface Agent {
+  id: string;
+  walletAddress: string;
+  name: string;
+  ensName?: string;
+  skills: string[];
+  erc8004Id?: string;
 }
 
 interface AutoReleaseSummary {
@@ -43,18 +69,31 @@ export default function AdminPage() {
   const [autoReleaseRunning, setAutoReleaseRunning] = useState(false);
   const [autoReleaseSummary, setAutoReleaseSummary] = useState<AutoReleaseSummary | null>(null);
 
+  // ENS Sync state
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [ensSyncRunning, setEnsSyncRunning] = useState(false);
+  const [ensSyncSummary, setEnsSyncSummary] = useState<EnsSyncSummary | null>(null);
+  const [ensSyncSingleId, setEnsSyncSingleId] = useState<string | null>(null);
+
   const isAdmin = address && ADMIN_WALLET && address.toLowerCase() === ADMIN_WALLET;
 
   const fetchBounties = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/bounties?limit=100');
-      const data = await res.json();
-      if (data.success) {
-        setAllBounties(data.bounties || []);
+      const [bountiesRes, agentsRes] = await Promise.all([
+        fetch('/api/bounties?limit=100'),
+        fetch('/api/agents?limit=100'),
+      ]);
+      const bountiesData = await bountiesRes.json();
+      const agentsData = await agentsRes.json();
+      if (bountiesData.success) {
+        setAllBounties(bountiesData.bounties || []);
+      }
+      if (agentsData.success) {
+        setAgents(agentsData.agents || []);
       }
     } catch (error) {
-      console.error('Failed to fetch bounties:', error);
+      console.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
     }
@@ -69,6 +108,7 @@ export default function AdminPage() {
   }, [isAdmin, fetchBounties]);
 
   // Derived data
+  const agentsWithEns = agents.filter(a => a.ensName && a.ensName.length > 0);
   const disputedBounties = allBounties.filter(b => b.disputeStatus === 'PENDING');
   const submittedBounties = allBounties.filter(b => b.status === 'SUBMITTED');
   const pastDeadline = submittedBounties.filter(
@@ -131,6 +171,36 @@ export default function AdminPage() {
       });
     } finally {
       setAutoReleaseRunning(false);
+    }
+  }
+
+  async function handleEnsSync(agentId?: string) {
+    if (agentId) setEnsSyncSingleId(agentId);
+    else setEnsSyncRunning(true);
+    setEnsSyncSummary(null);
+    try {
+      const res = await fetch('/api/admin/ens-sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET || ''}`,
+        },
+        body: JSON.stringify(agentId ? { agentId } : {}),
+      });
+      const data = await res.json();
+      setEnsSyncSummary(data);
+    } catch (error) {
+      setEnsSyncSummary({
+        success: false,
+        synced: 0,
+        alreadyOnchain: 0,
+        failed: 0,
+        skipped: 0,
+        results: [],
+      });
+    } finally {
+      setEnsSyncRunning(false);
+      setEnsSyncSingleId(null);
     }
   }
 
@@ -216,6 +286,7 @@ export default function AdminPage() {
           {[
             { key: 'disputes' as Tab, label: 'Disputes', count: disputedBounties.length },
             { key: 'auto-release' as Tab, label: 'Auto-Release', count: pastDeadline.length },
+            { key: 'ens-sync' as Tab, label: 'ENS Sync', count: agentsWithEns.length },
             { key: 'all' as Tab, label: 'All Bounties', count: allBounties.length },
           ].map(tab => (
             <button
@@ -434,6 +505,123 @@ export default function AdminPage() {
                     </div>
                   );
                 })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ENS Sync Tab */}
+        {activeTab === 'ens-sync' && (
+          <div>
+            {/* Sync All Button */}
+            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 mb-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-1">ENS Subdomain Sync</h3>
+                  <p className="text-slate-400 text-sm">
+                    Re-register ENS subdomains on-chain for agents whose records are missing.
+                    This can happen if the initial registration transaction failed silently.
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleEnsSync()}
+                  disabled={ensSyncRunning || !!ensSyncSingleId}
+                  className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-bold transition-opacity whitespace-nowrap"
+                >
+                  {ensSyncRunning ? 'Syncing...' : 'Sync All'}
+                </button>
+              </div>
+
+              {/* Results */}
+              {ensSyncSummary && (
+                <div className={`mt-4 border-t border-slate-700 pt-4 ${ensSyncSummary.success ? '' : 'text-red-400'}`}>
+                  <div className="grid grid-cols-4 gap-4 mb-3">
+                    <div>
+                      <div className="text-slate-500 text-xs">Synced</div>
+                      <div className="text-green-400 font-bold">{ensSyncSummary.synced}</div>
+                    </div>
+                    <div>
+                      <div className="text-slate-500 text-xs">Already On-Chain</div>
+                      <div className="text-blue-400 font-bold">{ensSyncSummary.alreadyOnchain}</div>
+                    </div>
+                    <div>
+                      <div className="text-slate-500 text-xs">Failed</div>
+                      <div className="text-red-400 font-bold">{ensSyncSummary.failed}</div>
+                    </div>
+                    <div>
+                      <div className="text-slate-500 text-xs">Skipped</div>
+                      <div className="text-slate-400 font-bold">{ensSyncSummary.skipped}</div>
+                    </div>
+                  </div>
+                  {ensSyncSummary.results.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {ensSyncSummary.results.map((r, i) => (
+                        <div
+                          key={i}
+                          className={`text-xs font-mono ${
+                            r.status === 'synced'
+                              ? 'text-green-400'
+                              : r.status === 'already_onchain'
+                                ? 'text-blue-400'
+                                : r.status === 'failed'
+                                  ? 'text-red-400'
+                                  : 'text-slate-400'
+                          }`}
+                        >
+                          {r.ensName}: {r.status}
+                          {r.txHashes?.setSubnodeRecord && ` (tx: ${r.txHashes.setSubnodeRecord.slice(0, 14)}...)`}
+                          {r.error && ` — ${r.error}`}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Agents with ENS */}
+            <h3 className="text-lg font-semibold text-white mb-4">
+              Agents with ENS Subdomains ({agentsWithEns.length})
+            </h3>
+            {agentsWithEns.length === 0 ? (
+              <div className="text-center py-8 text-slate-400 text-sm">
+                No agents with ENS subdomains
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {agentsWithEns.map(agent => (
+                  <div key={agent.id} className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 flex items-center justify-between">
+                    <div>
+                      <div className="text-white font-medium">{agent.name}</div>
+                      <div className="text-slate-400 text-sm space-x-3">
+                        <span className="text-purple-400">{agent.ensName}</span>
+                        <span className="font-mono text-xs">
+                          {agent.walletAddress.slice(0, 10)}...{agent.walletAddress.slice(-6)}
+                        </span>
+                      </div>
+                      <div className="text-slate-500 text-xs mt-1">
+                        Skills: {agent.skills.join(', ')} · ID: {agent.id}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <a
+                        href={`https://sepolia.app.ens.domains/${agent.ensName}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 text-xs transition-colors"
+                      >
+                        View on ENS ↗
+                      </a>
+                      <button
+                        onClick={() => handleEnsSync(agent.id)}
+                        disabled={ensSyncRunning || ensSyncSingleId === agent.id}
+                        className="bg-purple-600/50 hover:bg-purple-600 disabled:opacity-50 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                      >
+                        {ensSyncSingleId === agent.id ? 'Syncing...' : 'Sync'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
