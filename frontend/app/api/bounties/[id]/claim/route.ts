@@ -6,7 +6,7 @@ import { type AgentRow, type BountyRow } from "@/lib/supabase/models";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { MOCK_MODE, openChannelWithSDK } from "@/lib/services/yellow";
 
-const DEFAULT_YELLOW_TIMEOUT_MS = 12000;
+const DEFAULT_YELLOW_TIMEOUT_MS = 3000;
 
 const parsedYellowTimeout = Number.parseInt(
   process.env.YELLOW_OPEN_CHANNEL_TIMEOUT_MS || `${DEFAULT_YELLOW_TIMEOUT_MS}`,
@@ -114,17 +114,17 @@ export async function POST(request: NextRequest, context: RouteContext) {
       const network = "sepolia" as const;
       // Wrap in a timeout to prevent the claim endpoint from hanging
       // if Yellow ClearNode WebSocket is unresponsive
-      const channelPromise = openChannelWithSDK({
-        poster: bounty.poster_address,
-        agent: agentAddress.toLowerCase(),
-        deposit: Number(bounty.reward),
-        token: getPaymentToken(network),
-        chainId: CHAIN_CONFIG[network].chainId,
-      });
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Yellow channel open timed out after 15s")), 15000)
+      const channel = await withTimeout(
+        openChannelWithSDK({
+          poster: bounty.poster_address,
+          agent: agentAddress.toLowerCase(),
+          deposit: Number(bounty.reward),
+          token: getPaymentToken(network),
+          chainId: CHAIN_CONFIG[network].chainId,
+        }),
+        YELLOW_OPEN_CHANNEL_TIMEOUT_MS,
+        "Yellow channel open during claim"
       );
-      const channel = await Promise.race([channelPromise, timeoutPromise]);
       channelId = channel.channelId;
       yellowMode = channel.mode;
     } catch (yellowError) {

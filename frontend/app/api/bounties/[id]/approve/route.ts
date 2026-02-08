@@ -79,7 +79,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
           // Wrap Yellow operations in a timeout to prevent hanging
           // if ClearNode WebSocket is unresponsive
           const yellowTimeout = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("Yellow settlement timed out after 15s")), 15000)
+            setTimeout(() => reject(new Error("Yellow settlement timed out after 3s")), 3000)
           );
 
           const yellowSettlement = async () => {
