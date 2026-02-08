@@ -39,17 +39,23 @@ export async function POST(request: NextRequest) {
     const now = Date.now();
     const supabase = getSupabaseServerClient();
 
-    // Find all bounties past review deadline
-    const { data: expiredBounties, error: queryError } = await supabase
+    // Fetch submitted bounties and filter in memory.
+    // Our lightweight Supabase REST client currently supports `eq` but not `lt`/`or`.
+    const { data: submittedBounties, error: queryError } = await supabase
       .from<BountyRow>("bounties")
       .select("*")
-      .eq("status", "SUBMITTED")
-      .lt("review_deadline", now)
-      .or("dispute_status.is.null,dispute_status.neq.PENDING");
+      .eq("status", "SUBMITTED");
 
     if (queryError) {
       throw queryError;
     }
+
+    const expiredBounties = (submittedBounties ?? []).filter(
+      (bounty) =>
+        typeof bounty.review_deadline === "number" &&
+        bounty.review_deadline < now &&
+        bounty.dispute_status !== "PENDING"
+    );
 
     if (!expiredBounties || expiredBounties.length === 0) {
       return NextResponse.json({
