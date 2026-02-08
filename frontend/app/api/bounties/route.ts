@@ -20,7 +20,7 @@ const MAX_SUBMIT_DEADLINE_DAYS = 30;
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
 const DAY_MS = 24 * 60 * 60 * 1000;
-const DEFAULT_YELLOW_TIMEOUT_MS = 12000;
+const DEFAULT_YELLOW_TIMEOUT_MS = 3000;
 
 const parsedYellowTimeout = Number.parseInt(
   process.env.YELLOW_OPEN_CHANNEL_TIMEOUT_MS || `${DEFAULT_YELLOW_TIMEOUT_MS}`,
