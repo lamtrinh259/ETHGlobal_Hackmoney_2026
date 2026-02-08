@@ -149,7 +149,7 @@ class SupabaseTableQuery<T = unknown> implements PromiseLike<QueryResult<T[]>> {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
       let response: Response;
       try {
         response = await fetch(url.toString(), {
