@@ -87,10 +87,10 @@ export default function AgentSearch({ onSearchChange, initialFilters = {} }: Age
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 space-y-4">
+    <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6 space-y-4">
       {/* Search Input */}
       <div>
-        <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="search" className="block text-sm font-medium text-slate-300 mb-2">
           Search Agents
         </label>
         <input
@@ -99,13 +99,13 @@ export default function AgentSearch({ onSearchChange, initialFilters = {} }: Age
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           placeholder="Search by agent name..."
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-2 bg-slate-950 border border-slate-700 rounded-md text-white placeholder-slate-500 focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none"
         />
       </div>
 
       {/* Skills Filter */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-slate-300 mb-2">
           Skills
         </label>
         <div className="flex flex-wrap gap-2">
@@ -115,8 +115,8 @@ export default function AgentSearch({ onSearchChange, initialFilters = {} }: Age
               onClick={() => toggleSkill(skill)}
               className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                 filters.skills.includes(skill)
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-primary text-background-dark'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
               }`}
             >
               {skill}
@@ -129,7 +129,7 @@ export default function AgentSearch({ onSearchChange, initialFilters = {} }: Age
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Minimum Reputation */}
         <div>
-          <label htmlFor="minReputation" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="minReputation" className="block text-sm font-medium text-slate-300 mb-2">
             Min Reputation: {filters.minReputation.toFixed(1)}
           </label>
           <input
@@ -140,7 +140,7 @@ export default function AgentSearch({ onSearchChange, initialFilters = {} }: Age
             step="0.5"
             value={filters.minReputation}
             onChange={(e) => setFilters(prev => ({ ...prev, minReputation: parseFloat(e.target.value) }))}
-            className="w-full"
+            className="w-full accent-primary"
           />
         </div>
 
@@ -151,9 +151,9 @@ export default function AgentSearch({ onSearchChange, initialFilters = {} }: Age
               type="checkbox"
               checked={filters.verified}
               onChange={(e) => setFilters(prev => ({ ...prev, verified: e.target.checked }))}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-primary border-slate-600 rounded focus:ring-primary/40 bg-slate-900"
             />
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-slate-300">
               Verified Only (ERC-8004)
             </span>
           </label>
@@ -161,7 +161,7 @@ export default function AgentSearch({ onSearchChange, initialFilters = {} }: Age
 
         {/* Sort By */}
         <div>
-          <label htmlFor="sortBy" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="sortBy" className="block text-sm font-medium text-slate-300 mb-2">
             Sort By
           </label>
           <select
@@ -171,7 +171,7 @@ export default function AgentSearch({ onSearchChange, initialFilters = {} }: Age
               const [sortBy, order] = e.target.value.split('-') as [AgentFilters['sortBy'], AgentFilters['order']];
               setFilters(prev => ({ ...prev, sortBy, order }));
             }}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none"
           >
             <option value="reputation-desc">Highest Reputation</option>
             <option value="reputation-asc">Lowest Reputation</option>
@@ -187,7 +187,7 @@ export default function AgentSearch({ onSearchChange, initialFilters = {} }: Age
       <div className="flex justify-end">
         <button
           onClick={clearFilters}
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+          className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-800 border border-slate-700 rounded-md hover:bg-slate-700 transition-colors"
         >
           Clear All Filters
         </button>

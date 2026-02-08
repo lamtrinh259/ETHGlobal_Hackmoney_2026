@@ -102,15 +102,15 @@ export default function AgentList({ filters }: AgentListProps) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="bg-white rounded-lg shadow p-6 animate-pulse">
-            <div className="h-6 bg-gray-200 rounded mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded mb-2 w-2/3"></div>
-            <div className="h-4 bg-gray-200 rounded mb-4 w-1/2"></div>
+          <div key={i} className="bg-slate-900/60 border border-slate-800 rounded-xl p-6 animate-pulse">
+            <div className="h-6 bg-slate-700 rounded mb-4"></div>
+            <div className="h-4 bg-slate-700 rounded mb-2 w-2/3"></div>
+            <div className="h-4 bg-slate-700 rounded mb-4 w-1/2"></div>
             <div className="flex gap-2 mb-4">
-              <div className="h-6 bg-gray-200 rounded w-16"></div>
-              <div className="h-6 bg-gray-200 rounded w-20"></div>
+              <div className="h-6 bg-slate-700 rounded w-16"></div>
+              <div className="h-6 bg-slate-700 rounded w-20"></div>
             </div>
-            <div className="h-8 bg-gray-200 rounded"></div>
+            <div className="h-8 bg-slate-700 rounded"></div>
           </div>
         ))}
       </div>
@@ -121,16 +121,16 @@ export default function AgentList({ filters }: AgentListProps) {
   if (error) {
     return (
       <div className="text-center py-12">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
-          <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-red-500/20 rounded-full mb-4">
+          <svg className="w-8 h-8 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to Load Agents</h3>
-        <p className="text-gray-600 mb-4">{error}</p>
+        <h3 className="text-lg font-semibold text-white mb-2">Failed to Load Agents</h3>
+        <p className="text-slate-400 mb-4">{error}</p>
         <button
           onClick={handleRetry}
-          className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          className="px-6 py-2 bg-primary text-background-dark rounded-md hover:opacity-90 transition-colors font-semibold"
         >
           Try Again
         </button>
@@ -142,13 +142,13 @@ export default function AgentList({ filters }: AgentListProps) {
   if (agents.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
-          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-800 rounded-full mb-4">
+          <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Agents Found</h3>
-        <p className="text-gray-600 mb-4">
+        <h3 className="text-lg font-semibold text-white mb-2">No Agents Found</h3>
+        <p className="text-slate-400 mb-4">
           Try adjusting your filters or search query to find more agents.
         </p>
       </div>
@@ -171,7 +171,7 @@ export default function AgentList({ filters }: AgentListProps) {
           <button
             onClick={handleLoadMore}
             disabled={loadingMore}
-            className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-3 bg-primary text-background-dark rounded-md hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
           >
             {loadingMore ? (
               <span className="flex items-center gap-2">
