@@ -1,5 +1,5 @@
 import { createPublicClient, http, type Address } from 'viem';
-import { baseSepolia, base } from 'viem/chains';
+import { sepolia, baseSepolia, base } from 'viem/chains';
 import {
   ERC8004_CONTRACTS,
   CHAIN_CONFIG,
@@ -11,6 +11,7 @@ import { REPUTATION_REGISTRY_ABI } from './abis/reputationRegistry';
 
 // Chain mapping for viem
 const CHAIN_MAP = {
+  sepolia,
   baseSepolia,
   base,
 } as const;
@@ -28,6 +29,7 @@ function createClientForNetwork(network: SupportedNetwork) {
 
 // Pre-create clients for each network
 const clients = {
+  sepolia: createClientForNetwork('sepolia'),
   baseSepolia: createClientForNetwork('baseSepolia'),
   base: createClientForNetwork('base'),
 };

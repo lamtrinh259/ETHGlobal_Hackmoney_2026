@@ -19,12 +19,13 @@ export function AgentRegistrationForm() {
   const router = useRouter();
 
   const [name, setName] = useState('');
+  const [ensName, setEnsName] = useState('');
   const [skills, setSkills] = useState<string[]>([]);
   const [customSkill, setCustomSkill] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<RegistrationStep>('form');
-  const [firebaseAgentId, setFirebaseAgentId] = useState<string | null>(null);
+  const [dbAgentId, setDbAgentId] = useState<string | null>(null);
   const [existingErc8004Id, setExistingErc8004Id] = useState<string | null>(null);
 
   const {
@@ -52,30 +53,30 @@ export function AgentRegistrationForm() {
     checkExisting();
   }, [address]);
 
-  // Handle mint confirmation - update Firebase with ERC-8004 ID
+  // Handle mint confirmation - update database with ERC-8004 ID
   useEffect(() => {
-    if (isMintConfirmed && mintedAgentId && firebaseAgentId) {
-      // Use async IIFE to handle the Firebase update
+    if (isMintConfirmed && mintedAgentId && dbAgentId) {
+      // Use async IIFE to handle the DB update
       (async () => {
         try {
           await fetch('/api/agents', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              agentId: firebaseAgentId,
+              agentId: dbAgentId,
               erc8004Id: mintedAgentId.toString(),
               wallet: address,
             }),
           });
         } catch (err) {
-          console.error('Failed to update Firebase:', err);
+          console.error('Failed to update database:', err);
         }
         // Set step after async operation completes
         setStep('complete');
         setTimeout(() => router.push('/bounties'), 2000);
       })();
     }
-  }, [isMintConfirmed, mintedAgentId, firebaseAgentId, address, router]);
+  }, [isMintConfirmed, mintedAgentId, dbAgentId, address, router]);
 
   function toggleSkill(skill: string) {
     setSkills(prev =>
@@ -115,13 +116,14 @@ export function AgentRegistrationForm() {
     setError(null);
 
     try {
-      // Step 1: Register in Firebase
+      // Step 1: Register in DB
       const res = await fetch('/api/agents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           wallet: address,
           name: name.trim(),
+          ensName: ensName.trim() || null,
           skills,
         }),
       });
@@ -129,7 +131,7 @@ export function AgentRegistrationForm() {
       const data = await res.json();
 
       if (data.success) {
-        setFirebaseAgentId(data.agentId);
+        setDbAgentId(data.agentId);
 
         // If already has ERC-8004 ID, skip minting
         if (data.erc8004Id || existingErc8004Id) {
@@ -266,7 +268,7 @@ export function AgentRegistrationForm() {
         <div className="text-6xl mb-4">&#10003;</div>
         <h2 className="text-2xl font-bold text-white mb-2">Registration Complete!</h2>
         <p className="text-slate-400 mb-4">
-          Your ERC-8004 identity has been minted on Base Mainnet.
+          Your ERC-8004 identity has been minted. You are ready to use Clawork on Sepolia.
         </p>
         <p className="text-primary font-mono text-sm">
           Agent ID: #{mintedAgentId?.toString()}
@@ -310,6 +312,24 @@ export function AgentRegistrationForm() {
               maxLength={50}
               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:border-primary focus:outline-none"
             />
+          </div>
+
+          {/* ENS Name */}
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              ENS Name (optional)
+            </label>
+            <input
+              type="text"
+              value={ensName}
+              onChange={(e) => setEnsName(e.target.value)}
+              placeholder="youragent.eth"
+              maxLength={128}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:border-primary focus:outline-none"
+            />
+            <p className="text-slate-500 text-xs mt-2">
+              Add your ENS identity now. You can set/update text records later in the ENS Manager.
+            </p>
           </div>
 
           {/* Skills */}

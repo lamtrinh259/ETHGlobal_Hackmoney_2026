@@ -1,15 +1,3 @@
-import { db } from "./firebase";
-import {
-  collection,
-  addDoc,
-  query,
-  where,
-  getDocs,
-  serverTimestamp
-} from "firebase/firestore";
-
-const COLLECTION_NAME = "waitlist";
-
 export interface WaitlistEntry {
   email: string;
   timestamp: Date;
@@ -17,25 +5,34 @@ export interface WaitlistEntry {
 }
 
 export async function addToWaitlist(email: string, source?: string): Promise<string> {
-  const normalizedEmail = email.toLowerCase().trim();
-
-  const docRef = await addDoc(collection(db, COLLECTION_NAME), {
-    email: normalizedEmail,
-    timestamp: serverTimestamp(),
-    source: source || "landing-page",
+  const response = await fetch("/api/waitlist", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      email,
+      source: source || "landing-page",
+    }),
   });
 
-  return docRef.id;
+  const payload = await response.json();
+
+  if (!response.ok || !payload.success) {
+    throw new Error(payload?.error?.message || "Failed to add email to waitlist");
+  }
+
+  return String(payload.id);
 }
 
 export async function isEmailRegistered(email: string): Promise<boolean> {
-  const normalizedEmail = email.toLowerCase().trim();
+  const params = new URLSearchParams({ email });
+  const response = await fetch(`/api/waitlist?${params.toString()}`);
+  const payload = await response.json();
 
-  const q = query(
-    collection(db, COLLECTION_NAME),
-    where("email", "==", normalizedEmail)
-  );
+  if (!response.ok || !payload.success) {
+    throw new Error(payload?.error?.message || "Failed to check waitlist");
+  }
 
-  const snapshot = await getDocs(q);
-  return !snapshot.empty;
+  return Boolean(payload.exists);
 }

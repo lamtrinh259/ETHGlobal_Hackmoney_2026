@@ -1,95 +1,129 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { doc, runTransaction } from 'firebase/firestore';
-import { openChannel } from '@/lib/services/yellow';
+import { NextRequest, NextResponse } from "next/server";
+import { isAddress } from "viem";
+
+import { type AgentRow, type BountyRow } from "@/lib/supabase/models";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { openChannel } from "@/lib/services/yellow";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
+function errorResponse(code: string, message: string, status = 400) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: { code, message },
+    },
+    { status }
+  );
+}
+
 // POST /api/bounties/:id/claim
-export async function POST(
-  request: NextRequest,
-  context: RouteContext
-) {
+export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
     const body = await request.json();
-    const { agentId, agentAddress } = body;
 
-    if (!agentId || !agentAddress) {
-      return NextResponse.json(
-        { success: false, error: { code: 'INVALID_AGENT', message: 'Agent ID and address required' } },
-        { status: 400 }
+    const agentId = typeof body.agentId === "string" ? body.agentId : "";
+    const agentAddress =
+      typeof body.agentAddress === "string" ? body.agentAddress : "";
+
+    if (!agentId || !agentAddress || !isAddress(agentAddress)) {
+      return errorResponse(
+        "INVALID_AGENT",
+        "Agent ID and a valid agent address are required"
       );
     }
 
-    const bountyRef = doc(db, 'bounties', id);
-    const submitDeadline = Date.now() + (3 * 24 * 60 * 60 * 1000); // 3 days
+    const supabase = getSupabaseServerClient();
 
-    // Use Firestore transaction to prevent race conditions
-    const result = await runTransaction(db, async (transaction) => {
-      const bountyDoc = await transaction.get(bountyRef);
+    const { data: bounty, error: bountyError } = await supabase
+      .from<BountyRow>("bounties")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
 
-      if (!bountyDoc.exists()) {
-        throw new Error('BOUNTY_NOT_FOUND');
-      }
+    if (bountyError) {
+      throw bountyError;
+    }
 
-      const bounty = bountyDoc.data();
+    if (!bounty) {
+      return errorResponse("BOUNTY_NOT_FOUND", "Bounty not found", 404);
+    }
 
-      if (bounty.status !== 'OPEN') {
-        throw new Error('BOUNTY_ALREADY_CLAIMED');
-      }
+    if (bounty.status !== "OPEN") {
+      return errorResponse(
+        "BOUNTY_ALREADY_CLAIMED",
+        "Bounty has already been claimed",
+        409
+      );
+    }
 
-      // Open Yellow state channel
-      const { channelId } = await openChannel({
-        poster: bounty.posterAddress,
+    const { data: agent, error: agentError } = await supabase
+      .from<Pick<AgentRow, "id" | "erc8004_id">>("agents")
+      .select("id, erc8004_id")
+      .eq("id", agentId)
+      .maybeSingle();
+
+    if (agentError) {
+      throw agentError;
+    }
+
+    if (!agent) {
+      return errorResponse("AGENT_NOT_FOUND", "Agent not found", 404);
+    }
+
+    let channelId: string | null = null;
+    try {
+      const channel = await openChannel({
+        poster: bounty.poster_address,
         agent: agentAddress.toLowerCase(),
-        deposit: bounty.reward,
+        deposit: Number(bounty.reward),
       });
+      channelId = channel.channelId;
+    } catch (yellowError) {
+      console.warn("Yellow channel open failed during claim:", yellowError);
+    }
 
-      // Update bounty atomically
-      transaction.update(bountyRef, {
-        status: 'CLAIMED',
-        assignedAgentId: agentId,
-        assignedAgentAddress: agentAddress.toLowerCase(),
-        yellowChannelId: channelId,
-        claimedAt: Date.now(),
-        submitDeadline,
-      });
+    const submitDeadline = Date.now() + 3 * 24 * 60 * 60 * 1000;
 
-      return { channelId };
-    });
+    const { data: updatedRows, error: updateError } = await supabase
+      .from<BountyRow>("bounties")
+      .update({
+        status: "CLAIMED",
+        assigned_agent_id: agentId,
+        assigned_agent_address: agentAddress.toLowerCase(),
+        assigned_agent_erc8004_id: agent.erc8004_id ?? null,
+        yellow_channel_id: channelId,
+        claimed_at: Date.now(),
+        submit_deadline: submitDeadline,
+      })
+      .eq("id", id)
+      .eq("status", "OPEN")
+      .select("*");
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    if (!updatedRows || updatedRows.length === 0) {
+      return errorResponse(
+        "BOUNTY_ALREADY_CLAIMED",
+        "Bounty has already been claimed",
+        409
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      channelId: result.channelId,
+      channelId,
       submitDeadline,
-      message: 'Bounty claimed! Complete and submit your work before the deadline.',
+      message:
+        "Bounty claimed! Complete and submit your work before the deadline.",
     });
-
   } catch (error) {
-    console.error('Claim bounty error:', error);
-
-    // Handle specific error cases
-    if (error instanceof Error) {
-      if (error.message === 'BOUNTY_NOT_FOUND') {
-        return NextResponse.json(
-          { success: false, error: { code: 'BOUNTY_NOT_FOUND', message: 'Bounty not found' } },
-          { status: 404 }
-        );
-      }
-      if (error.message === 'BOUNTY_ALREADY_CLAIMED') {
-        return NextResponse.json(
-          { success: false, error: { code: 'BOUNTY_ALREADY_CLAIMED', message: 'Bounty has already been claimed' } },
-          { status: 409 }
-        );
-      }
-    }
-
-    return NextResponse.json(
-      { success: false, error: { code: 'SERVER_ERROR', message: 'Failed to claim bounty' } },
-      { status: 500 }
-    );
+    console.error("Claim bounty error:", error);
+    return errorResponse("SERVER_ERROR", "Failed to claim bounty", 500);
   }
 }

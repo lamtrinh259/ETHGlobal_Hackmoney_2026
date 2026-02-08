@@ -67,8 +67,8 @@ const YELLOW_CONFIG = {
   TEST_USD: process.env.NEXT_PUBLIC_YELLOW_TEST_USD || '0xDB9F293e3898c9E5536A3be1b0C56c89d2b32DEb',
   BASE_USDC: process.env.NEXT_PUBLIC_BASE_USDC || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
 
-  // Chain configuration (Base Mainnet is primary)
-  DEFAULT_CHAIN_ID: 8453, // Base Mainnet
+  // Chain configuration (Base Sepolia for hackathon sandbox)
+  DEFAULT_CHAIN_ID: 84532, // Base Sepolia
 
   // Mode flag - set YELLOW_MOCK_MODE=false to enable real SDK
   MOCK_MODE: process.env.YELLOW_MOCK_MODE !== 'false',
@@ -400,23 +400,23 @@ interface RPCRequest {
   id: string | number;
   jsonrpc: '2.0';
   method: string;
-  params?: any;
+  params?: Record<string, unknown>;
 }
 
 interface RPCResponse {
   id: string | number;
   jsonrpc: '2.0';
-  result?: any;
+  result?: unknown;
   error?: {
     code: number;
     message: string;
-    data?: any;
+    data?: unknown;
   };
 }
 
 interface PendingRequest {
-  resolve: (value: any) => void;
-  reject: (error: Error) => void;
+  resolve: (value: unknown) => void;
+  reject: (error: unknown) => void;
   timeout: NodeJS.Timeout;
 }
 
@@ -525,6 +525,10 @@ class YellowWSClient {
     return this.connectionPromise;
   }
 
+  getSocket(): WebSocket | null {
+    return this.ws;
+  }
+
   /**
    * Handle automatic reconnection with exponential backoff
    */
@@ -602,7 +606,11 @@ class YellowWSClient {
   /**
    * Send RPC request and wait for response
    */
-  async sendRequest(method: string, params?: any, timeoutMs = 30000): Promise<any> {
+  async sendRequest<T = unknown>(
+    method: string,
+    params: Record<string, unknown> = {},
+    timeoutMs = 30000
+  ): Promise<T> {
     await this.connect();
 
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
@@ -617,7 +625,7 @@ class YellowWSClient {
       params: params || {},
     };
 
-    return new Promise((resolve, reject) => {
+    return new Promise<T>((resolve, reject) => {
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(id);
         reject(new Error(`Request timeout: ${method}`));
@@ -638,28 +646,28 @@ class YellowWSClient {
   /**
    * Health check ping
    */
-  async ping(): Promise<any> {
+  async ping(): Promise<unknown> {
     return this.sendRequest('ping', {});
   }
 
   /**
    * Get ClearNode configuration
    */
-  async getConfig(): Promise<any> {
+  async getConfig(): Promise<unknown> {
     return this.sendRequest('get_config', {});
   }
 
   /**
    * Get supported assets/tokens
    */
-  async getAssets(): Promise<any> {
+  async getAssets(): Promise<unknown> {
     return this.sendRequest('get_assets', {});
   }
 
   /**
    * Create new state channel
    */
-  async createChannel(chainId: number, token: string): Promise<any> {
+  async createChannel(chainId: number, token: string): Promise<unknown> {
     return this.sendRequest('create_channel', {
       chain_id: chainId,
       token,
@@ -669,7 +677,11 @@ class YellowWSClient {
   /**
    * Resize channel (deposit/withdraw)
    */
-  async resizeChannel(channelId: string, amount: string, operation: 'deposit' | 'withdraw'): Promise<any> {
+  async resizeChannel(
+    channelId: string,
+    amount: string,
+    operation: 'deposit' | 'withdraw'
+  ): Promise<unknown> {
     return this.sendRequest('resize_channel', {
       channel_id: channelId,
       amount,
@@ -680,7 +692,7 @@ class YellowWSClient {
   /**
    * Close state channel
    */
-  async closeChannel(channelId: string): Promise<any> {
+  async closeChannel(channelId: string): Promise<unknown> {
     return this.sendRequest('close_channel', {
       channel_id: channelId,
     });
@@ -689,14 +701,14 @@ class YellowWSClient {
   /**
    * Get channels for user
    */
-  async getChannels(address?: string): Promise<any> {
+  async getChannels(address?: string): Promise<unknown> {
     return this.sendRequest('get_channels', address ? { address } : {});
   }
 
   /**
    * Get ledger balances
    */
-  async getLedgerBalances(address?: string): Promise<any> {
+  async getLedgerBalances(address?: string): Promise<unknown> {
     return this.sendRequest('get_ledger_balances', address ? { address } : {});
   }
 
@@ -707,7 +719,7 @@ class YellowWSClient {
    * pre-signed JSON-RPC messages as strings. This method sends them directly
    * and correlates responses by request ID.
    */
-  async sendRawMessage(message: string, timeoutMs = 30000): Promise<any> {
+  async sendRawMessage<T = unknown>(message: string, timeoutMs = 30000): Promise<T> {
     await this.connect();
 
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
@@ -725,7 +737,7 @@ class YellowWSClient {
       requestId = this.nextRequestId++;
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise<T>((resolve, reject) => {
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(requestId);
         reject(new Error('Request timeout'));
@@ -776,8 +788,11 @@ function getWSClient(): YellowWSClient {
 async function getConnection(): Promise<WebSocket> {
   const client = getWSClient();
   await client.connect();
-  // Return internal ws (note: direct access discouraged, use client methods instead)
-  return (client as any).ws;
+  const socket = client.getSocket();
+  if (!socket) {
+    throw new Error('WebSocket not connected');
+  }
+  return socket;
 }
 
 /**
@@ -965,7 +980,9 @@ export async function openChannel(params: OpenChannelParams): Promise<OpenChanne
     return {
       channelId,
       sessionId: channel.sessionId,
-      txHash: custodyTxHash || approvalTxHash !== 'already_approved' ? approvalTxHash : undefined,
+      txHash:
+        custodyTxHash ??
+        (approvalTxHash !== 'already_approved' ? approvalTxHash : undefined),
     };
 
   } catch (error) {

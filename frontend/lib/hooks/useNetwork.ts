@@ -5,7 +5,7 @@
  *
  * React context and hook for managing ERC-8004 network selection.
  * Provides functions for:
- * - Switching between supported networks (Base Sepolia, Base Mainnet)
+ * - Switching between supported networks (Sepolia, Base Sepolia, Base Mainnet)
  * - Getting current network contracts and configuration
  * - Syncing with wallet network via wagmi
  */
@@ -22,11 +22,13 @@ import { setCurrentNetwork as setErc8004Network } from '@/lib/contracts/erc8004'
 
 // Chain ID to network mapping
 const CHAIN_ID_TO_NETWORK: Record<number, SupportedNetwork> = {
+  11155111: 'sepolia',
   84532: 'baseSepolia',
   8453: 'base',
 };
 
 const NETWORK_TO_CHAIN_ID: Record<SupportedNetwork, number> = {
+  sepolia: 11155111,
   baseSepolia: 84532,
   base: 8453,
 };

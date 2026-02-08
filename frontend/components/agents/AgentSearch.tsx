@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const COMMON_SKILLS = [
   'solidity',
@@ -43,8 +43,7 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function AgentSearch({ onSearchChange, initialFilters = {} }: AgentSearchProps) {
-  const [filters, setFilters] = useState<AgentFilters>({
-    search: initialFilters.search || '',
+  const [filters, setFilters] = useState<Omit<AgentFilters, 'search'>>({
     skills: initialFilters.skills || [],
     minReputation: initialFilters.minReputation || 0,
     verified: initialFilters.verified || false,
@@ -52,18 +51,20 @@ export default function AgentSearch({ onSearchChange, initialFilters = {} }: Age
     order: initialFilters.order || 'desc',
   });
 
-  const [searchInput, setSearchInput] = useState(filters.search);
+  const [searchInput, setSearchInput] = useState(initialFilters.search || '');
   const debouncedSearch = useDebounce(searchInput, 300);
+  const effectiveFilters = useMemo<AgentFilters>(
+    () => ({
+      ...filters,
+      search: debouncedSearch,
+    }),
+    [filters, debouncedSearch]
+  );
 
-  // Trigger search when debounced value changes
+  // Notify parent when effective filters change
   useEffect(() => {
-    setFilters(prev => ({ ...prev, search: debouncedSearch }));
-  }, [debouncedSearch]);
-
-  // Notify parent when filters change
-  useEffect(() => {
-    onSearchChange(filters);
-  }, [filters, onSearchChange]);
+    onSearchChange(effectiveFilters);
+  }, [effectiveFilters, onSearchChange]);
 
   const toggleSkill = (skill: string) => {
     setFilters(prev => ({
@@ -77,7 +78,6 @@ export default function AgentSearch({ onSearchChange, initialFilters = {} }: Age
   const clearFilters = () => {
     setSearchInput('');
     setFilters({
-      search: '',
       skills: [],
       minReputation: 0,
       verified: false,

@@ -1,106 +1,123 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { isAddress } from 'viem';
-import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import type { Bounty, DisputeInput } from '@/lib/types/bounty';
+import { NextRequest, NextResponse } from "next/server";
+import { isAddress } from "viem";
+
+import { type BountyRow } from "@/lib/supabase/models";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import type { DisputeInput } from "@/lib/types/bounty";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
+function errorResponse(code: string, message: string, status = 400) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: { code, message },
+    },
+    { status }
+  );
+}
+
 // POST /api/bounties/:id/dispute - Open a dispute
-export async function POST(
-  request: NextRequest,
-  context: RouteContext
-) {
+export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
     const body: DisputeInput = await request.json();
-    const { initiatorAddress, reason } = body;
+    const initiatorAddress = body.initiatorAddress;
+    const reason = body.reason;
 
-    // Validate input
     if (!initiatorAddress || !isAddress(initiatorAddress)) {
-      return NextResponse.json(
-        { success: false, error: { code: 'INVALID_ADDRESS', message: 'Valid initiator address required' } },
-        { status: 400 }
-      );
+      return errorResponse("INVALID_ADDRESS", "Valid initiator address required");
     }
 
-    if (!reason || typeof reason !== 'string' || reason.trim().length === 0) {
-      return NextResponse.json(
-        { success: false, error: { code: 'INVALID_REASON', message: 'Dispute reason required' } },
-        { status: 400 }
-      );
+    if (!reason || reason.trim().length === 0) {
+      return errorResponse("INVALID_REASON", "Dispute reason required");
     }
 
-    // Get bounty
-    const bountyRef = doc(db, 'bounties', id);
-    const bountyDoc = await getDoc(bountyRef);
+    const supabase = getSupabaseServerClient();
+    const { data: bounty, error: bountyError } = await supabase
+      .from<BountyRow>("bounties")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
 
-    if (!bountyDoc.exists()) {
-      return NextResponse.json(
-        { success: false, error: { code: 'BOUNTY_NOT_FOUND', message: 'Bounty not found' } },
-        { status: 404 }
-      );
+    if (bountyError) {
+      throw bountyError;
     }
 
-    const bounty = bountyDoc.data() as Bounty;
+    if (!bounty) {
+      return errorResponse("BOUNTY_NOT_FOUND", "Bounty not found", 404);
+    }
 
-    // Check status allows dispute
-    const disputeAllowedStatuses = ['CLAIMED', 'SUBMITTED'];
+    const disputeAllowedStatuses = ["CLAIMED", "SUBMITTED"];
     if (!disputeAllowedStatuses.includes(bounty.status)) {
-      return NextResponse.json(
-        { success: false, error: { code: 'INVALID_STATUS_FOR_DISPUTE', message: `Cannot dispute bounty with status: ${bounty.status}` } },
-        { status: 400 }
+      return errorResponse(
+        "INVALID_STATUS_FOR_DISPUTE",
+        `Cannot dispute bounty with status: ${bounty.status}`
       );
     }
 
-    // Verify initiator is a participant
     const initiatorLower = initiatorAddress.toLowerCase();
-    const isPoster = bounty.posterAddress === initiatorLower;
-    const isAgent = bounty.assignedAgentAddress === initiatorLower;
+    const isPoster = bounty.poster_address === initiatorLower;
+    const isAgent = bounty.assigned_agent_address === initiatorLower;
 
     if (!isPoster && !isAgent) {
-      return NextResponse.json(
-        { success: false, error: { code: 'NOT_PARTICIPANT', message: 'Only the poster or assigned agent can open a dispute' } },
-        { status: 403 }
+      return errorResponse(
+        "NOT_PARTICIPANT",
+        "Only the poster or assigned agent can open a dispute",
+        403
       );
     }
 
-    // Check if already disputed
-    if (bounty.disputeStatus === 'PENDING') {
-      return NextResponse.json(
-        { success: false, error: { code: 'ALREADY_DISPUTED', message: 'A dispute is already pending for this bounty' } },
-        { status: 400 }
+    if (bounty.dispute_status === "PENDING") {
+      return errorResponse(
+        "ALREADY_DISPUTED",
+        "A dispute is already pending for this bounty"
       );
     }
 
     const now = Date.now();
     const disputeId = `dispute_${id}_${now}`;
 
-    // Update bounty with dispute info
-    await updateDoc(bountyRef, {
-      disputeStatus: 'PENDING',
-      disputeReason: reason.trim(),
-      disputeTimestamp: now,
-      disputeInitiator: initiatorLower,
-      disputeId,
+    const { error: bountyUpdateError } = await supabase
+      .from<BountyRow>("bounties")
+      .update({
+        dispute_status: "PENDING",
+        dispute_reason: reason.trim(),
+        dispute_timestamp: now,
+        dispute_initiator: initiatorLower,
+        dispute_id: disputeId,
+      })
+      .eq("id", id);
+
+    if (bountyUpdateError) {
+      throw bountyUpdateError;
+    }
+
+    const { error: disputeInsertError } = await supabase.from("disputes").insert({
+      id: disputeId,
+      bounty_id: id,
+      agent_id: bounty.assigned_agent_id,
+      poster_address: bounty.poster_address,
+      reason: reason.trim(),
+      evidence_cid: null,
+      status: "PENDING",
+      created_at: now,
     });
 
-    // In a real implementation, this would trigger the Yellow adjudicator
-    // via the ERC-7824 dispute resolution protocol
+    if (disputeInsertError) {
+      throw disputeInsertError;
+    }
 
     return NextResponse.json({
       success: true,
       disputeId,
-      message: 'Dispute opened. This will be reviewed by the Yellow Network adjudicator.',
+      message:
+        "Dispute opened. This will be reviewed by the Clawork team and settled through Yellow flow.",
     });
-
   } catch (error) {
-    console.error('Open dispute error:', error);
-    return NextResponse.json(
-      { success: false, error: { code: 'SERVER_ERROR', message: 'Failed to open dispute' } },
-      { status: 500 }
-    );
+    console.error("Open dispute error:", error);
+    return errorResponse("SERVER_ERROR", "Failed to open dispute", 500);
   }
 }

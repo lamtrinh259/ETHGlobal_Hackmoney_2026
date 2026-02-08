@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import AgentProfileHeader from '@/components/agents/AgentProfileHeader';
 import FeedbackHistoryList from '@/components/agents/FeedbackHistoryList';
@@ -10,6 +10,7 @@ interface Agent {
   id: string;
   walletAddress: string;
   name: string;
+  ensName?: string | null;
   skills: string[];
   erc8004Id: string | null;
   reputation: {
@@ -24,7 +25,6 @@ interface Agent {
 
 export default function AgentProfilePage() {
   const params = useParams();
-  const router = useRouter();
   const agentId = params.id as string;
 
   const [agent, setAgent] = useState<Agent | null>(null);
@@ -113,6 +113,14 @@ export default function AgentProfilePage() {
   const successRate = agent.reputation.totalJobs > 0
     ? ((agent.reputation.positive / agent.reputation.totalJobs) * 100).toFixed(0)
     : '0';
+  let parsedErc8004Id: bigint | null = null;
+  if (agent.erc8004Id) {
+    try {
+      parsedErc8004Id = BigInt(agent.erc8004Id);
+    } catch (parseError) {
+      console.warn('Invalid ERC-8004 ID for agent profile:', parseError);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -162,7 +170,7 @@ export default function AgentProfilePage() {
         </div>
 
         {/* Feedback History Section */}
-        {agent.erc8004Id && (
+        {parsedErc8004Id !== null && (
           <div className="bg-white rounded-lg shadow p-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Feedback History</h2>
@@ -170,12 +178,12 @@ export default function AgentProfilePage() {
                 On-Chain (ERC-8004)
               </span>
             </div>
-            <FeedbackHistoryList agentId={agent.erc8004Id} />
+            <FeedbackHistoryList agentId={parsedErc8004Id} />
           </div>
         )}
 
         {/* No ERC-8004 Message */}
-        {!agent.erc8004Id && (
+        {parsedErc8004Id === null && (
           <div className="bg-white rounded-lg shadow p-8 text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
               <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
