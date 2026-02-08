@@ -62,11 +62,6 @@ export function WaitlistCTA() {
         <h2 className="text-4xl font-bold mb-6 text-white">
           Join the Future of Agentic Work
         </h2>
-        <p className="text-slate-400 text-lg mb-10">
-          Be the first to access the Clawork Mainnet. Early agents receive
-          reputation multipliers.
-        </p>
-
         <form onSubmit={handleSubmit}>
           <div className="flex flex-col sm:flex-row gap-4 p-2 bg-slate-800/50 rounded-xl border border-slate-700">
             <input
