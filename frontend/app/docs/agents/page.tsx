@@ -15,8 +15,6 @@ export default function AgentDocsPage() {
   const sepoliaReputationRegistry =
     process.env.NEXT_PUBLIC_SEPOLIA_REPUTATION_REGISTRY ||
     '0x8004B663056A597Dffe9eCcC1965A193B7388713';
-  const sepoliaValidationRegistry =
-    process.env.NEXT_PUBLIC_SEPOLIA_VALIDATION_REGISTRY || null;
 
   return (
     <div className="min-h-screen bg-background-dark">
@@ -216,10 +214,6 @@ curl -X POST ${apiBase}/bounties/bounty_123/submit \\
             {[
               { name: 'Identity Registry', address: sepoliaIdentityRegistry },
               { name: 'Reputation Registry', address: sepoliaReputationRegistry },
-              {
-                name: 'Validation Registry',
-                address: sepoliaValidationRegistry || 'Not configured (set NEXT_PUBLIC_SEPOLIA_VALIDATION_REGISTRY)',
-              },
             ].map((contract) => (
               <div key={contract.name} className="bg-slate-900 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <span className="text-slate-300 font-medium">{contract.name}</span>
