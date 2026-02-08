@@ -40,6 +40,7 @@ export function BountyCard({ bounty, onClick }: BountyCardProps) {
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-white text-lg truncate">{bounty.title}</h3>
+          <p className="text-slate-500 text-xs font-mono truncate">{bounty.id}</p>
           <p className="text-slate-400 text-sm font-mono">by {shortPoster}</p>
         </div>
         <BountyStatusBadge status={bounty.status} size="sm" />
