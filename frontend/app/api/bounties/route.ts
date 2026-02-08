@@ -20,6 +20,16 @@ const MAX_SUBMIT_DEADLINE_DAYS = 30;
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_YELLOW_TIMEOUT_MS = 12000;
+
+const parsedYellowTimeout = Number.parseInt(
+  process.env.YELLOW_OPEN_CHANNEL_TIMEOUT_MS || `${DEFAULT_YELLOW_TIMEOUT_MS}`,
+  10
+);
+const YELLOW_OPEN_CHANNEL_TIMEOUT_MS =
+  Number.isFinite(parsedYellowTimeout) && parsedYellowTimeout > 0
+    ? parsedYellowTimeout
+    : DEFAULT_YELLOW_TIMEOUT_MS;
 
 function errorResponse(code: string, message: string, status = 400) {
   return NextResponse.json(
@@ -35,6 +45,28 @@ function normalizeSkills(skills: string[]): string[] {
   return skills
     .map((value) => value.toLowerCase().trim())
     .filter((value) => value.length > 0);
+}
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  label: string
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+  });
 }
 
 // POST /api/bounties - Create a new bounty
@@ -115,13 +147,17 @@ export async function POST(request: NextRequest) {
 
       const tokenAddress = getPaymentToken(network);
 
-      const channelResult = await openChannelWithSDK({
-        poster: posterAddress,
-        agent: "0x0000000000000000000000000000000000000000",
-        deposit: reward,
-        token: tokenAddress,
-        chainId: CHAIN_CONFIG[network].chainId,
-      });
+      const channelResult = await withTimeout(
+        openChannelWithSDK({
+          poster: posterAddress,
+          agent: "0x0000000000000000000000000000000000000000",
+          deposit: reward,
+          token: tokenAddress,
+          chainId: CHAIN_CONFIG[network].chainId,
+        }),
+        YELLOW_OPEN_CHANNEL_TIMEOUT_MS,
+        "Yellow channel open on bounty creation"
+      );
 
       yellowChannelId = channelResult.channelId;
       yellowSessionId = channelResult.sessionId;
