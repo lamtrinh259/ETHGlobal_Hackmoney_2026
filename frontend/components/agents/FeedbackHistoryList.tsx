@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAgentFeedbackHistory, int128ToRating } from '@/lib/hooks/useReputationRegistry';
 import { FeedbackResponseForm } from './FeedbackResponseForm';
 import { RatingDisplay } from '@/components/bounties/RatingInput';
+import { AddressDisplay } from '@/components/AddressDisplay';
 import { fetchFromIPFS, type FeedbackMetadata } from '@/lib/services/ipfs';
 
 interface FeedbackHistoryListProps {
@@ -90,7 +91,7 @@ export function FeedbackHistoryList({ agentId, canRespond = false }: FeedbackHis
                 <div className="flex items-center gap-3">
                   <RatingDisplay value={rating} size="sm" />
                   <span className="text-slate-400 text-sm">
-                    from {feedback.clientAddress.slice(0, 8)}...
+                    from <AddressDisplay address={feedback.clientAddress} titleMode="address" />
                   </span>
                 </div>
                 <div className="flex items-center gap-3">

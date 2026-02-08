@@ -6,6 +6,7 @@ import { BountyStatusBadge } from '@/components/bounties/BountyStatusBadge';
 import { ClaimBountyButton } from '@/components/bounties/ClaimBountyButton';
 import { SubmitWorkForm } from '@/components/bounties/SubmitWorkForm';
 import { RatingInput } from '@/components/bounties/RatingInput';
+import { AddressDisplay } from '@/components/AddressDisplay';
 import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import { useGiveFeedback } from '@/lib/hooks/useReputationRegistry';
@@ -162,7 +163,7 @@ export default function BountyDetailPage({ params }: { params: Promise<{ id: str
             <div className="flex items-center gap-4">
               <BountyStatusBadge status={bounty.status} />
               <span className="text-slate-400 text-sm">
-                Posted by {bounty.posterAddress.slice(0, 8)}...
+                Posted by <AddressDisplay address={bounty.posterAddress} titleMode="address" />
               </span>
             </div>
           </div>

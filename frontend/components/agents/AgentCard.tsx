@@ -1,6 +1,7 @@
 'use client';
 
 import { ReputationBadge } from './ReputationBadge';
+import { AddressDisplay } from '@/components/AddressDisplay';
 
 interface Agent {
   id: string;
@@ -22,9 +23,6 @@ interface AgentCardProps {
 }
 
 export function AgentCard({ agent, onClick }: AgentCardProps) {
-  // Truncate wallet address
-  const shortAddress = `${agent.walletAddress.slice(0, 6)}...${agent.walletAddress.slice(-4)}`;
-
   return (
     <div
       className={`
@@ -38,8 +36,12 @@ export function AgentCard({ agent, onClick }: AgentCardProps) {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h3 className="font-semibold text-white text-lg">{agent.name}</h3>
-          <p className="text-slate-300 text-sm font-mono">
-            {agent.ensName || shortAddress}
+          <p className="text-slate-400 text-sm font-mono">
+            <AddressDisplay
+              address={agent.walletAddress}
+              ensName={agent.ensName}
+              titleMode="address"
+            />
           </p>
         </div>
 
