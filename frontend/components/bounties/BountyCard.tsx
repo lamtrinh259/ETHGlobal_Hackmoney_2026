@@ -1,6 +1,7 @@
 'use client';
 
 import { BountyStatusBadge } from './BountyStatusBadge';
+import { AddressDisplay } from '@/components/AddressDisplay';
 
 interface Bounty {
   id: string;
@@ -20,8 +21,6 @@ interface BountyCardProps {
 }
 
 export function BountyCard({ bounty, onClick }: BountyCardProps) {
-  const shortPoster = `${bounty.posterAddress.slice(0, 6)}...${bounty.posterAddress.slice(-4)}`;
-
   // Format deadline if exists
   const deadlineText = bounty.submitDeadline
     ? new Date(bounty.submitDeadline).toLocaleDateString()
@@ -40,7 +39,9 @@ export function BountyCard({ bounty, onClick }: BountyCardProps) {
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-white text-lg truncate">{bounty.title}</h3>
-          <p className="text-slate-400 text-sm font-mono">by {shortPoster}</p>
+          <p className="text-slate-400 text-sm font-mono">
+            by <AddressDisplay address={bounty.posterAddress} titleMode="address" />
+          </p>
         </div>
         <BountyStatusBadge status={bounty.status} size="sm" />
       </div>

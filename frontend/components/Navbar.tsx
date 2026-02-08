@@ -3,74 +3,14 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ClaworkLogo } from "./icons/ClaworkLogo";
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
-import { useAccount, useEnsName } from 'wagmi';
-import { sepolia } from 'wagmi/chains';
+import { useAccount } from 'wagmi';
 
-function shortenAddress(address?: string) {
-  if (!address) return '';
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-}
+import { useAddressDisplay } from '@/lib/hooks/useAddressDisplay';
+import { shortenAddress } from '@/lib/utils/address';
 
 function WalletControls({ compact = false }: { compact?: boolean }) {
   const { address } = useAccount();
-  const [agentEnsRecord, setAgentEnsRecord] = useState<{ wallet: string; ensName: string | null } | null>(null);
-
-  const { data: resolvedEnsName } = useEnsName({
-    address,
-    chainId: sepolia.id,
-    query: { enabled: Boolean(address) },
-  });
-
-  useEffect(() => {
-    if (!address) {
-      return;
-    }
-
-    const controller = new AbortController();
-
-    const loadAgent = async () => {
-      try {
-        const response = await fetch(`/api/agents?wallet=${encodeURIComponent(address)}`, {
-          signal: controller.signal,
-          cache: 'no-store',
-        });
-
-        if (!response.ok) {
-          setAgentEnsRecord({ wallet: address.toLowerCase(), ensName: null });
-          return;
-        }
-
-        const payload = await response.json() as {
-          agents?: Array<{ ensName?: string | null }>;
-        };
-
-        const ensName = payload.agents?.[0]?.ensName;
-        setAgentEnsRecord({
-          wallet: address.toLowerCase(),
-          ensName: typeof ensName === 'string' && ensName.trim() ? ensName : null,
-        });
-      } catch (error) {
-        if ((error as Error).name !== 'AbortError') {
-          console.warn('Unable to fetch agent ENS name:', error);
-        }
-        setAgentEnsRecord({ wallet: address.toLowerCase(), ensName: null });
-      }
-    };
-
-    void loadAgent();
-
-    return () => controller.abort();
-  }, [address]);
-
-  const agentEnsName = useMemo(() => {
-    if (!address || !agentEnsRecord) return null;
-    return agentEnsRecord.wallet === address.toLowerCase() ? agentEnsRecord.ensName : null;
-  }, [address, agentEnsRecord]);
-
-  const displayName = useMemo(() => {
-    return agentEnsName || resolvedEnsName || shortenAddress(address);
-  }, [address, agentEnsName, resolvedEnsName]);
+  const { displayName } = useAddressDisplay(address);
 
   return (
     <ConnectButton.Custom>
@@ -118,7 +58,10 @@ function WalletControls({ compact = false }: { compact?: boolean }) {
           );
         }
 
-        const shownName = displayName || account.displayName || shortenAddress(account.address);
+        const accountDisplayName = account.displayName?.startsWith('0x')
+          ? shortenAddress(account.address)
+          : account.displayName;
+        const shownName = displayName || accountDisplayName || shortenAddress(account.address);
 
         return (
           <div className="flex items-center gap-2">

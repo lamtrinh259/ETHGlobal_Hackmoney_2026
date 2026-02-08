@@ -6,6 +6,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useRouter } from 'next/navigation';
 import { useRegisterIdentity } from '@/lib/hooks/useIdentityRegistry';
 import { getAgentId } from '@/lib/contracts/erc8004';
+import { AddressDisplay } from '@/components/AddressDisplay';
 
 const COMMON_SKILLS = [
   'solidity', 'typescript', 'javascript', 'python', 'rust',
@@ -295,7 +296,7 @@ export function AgentRegistrationForm() {
               Wallet Address
             </label>
             <div className="bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-slate-400 font-mono text-sm">
-              {address}
+              <AddressDisplay address={address} titleMode="address" />
             </div>
           </div>
 

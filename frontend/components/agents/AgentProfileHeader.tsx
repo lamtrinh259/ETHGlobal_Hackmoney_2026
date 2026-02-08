@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { ReputationBadge } from './ReputationBadge';
+import { AddressDisplay } from '@/components/AddressDisplay';
 
 interface Agent {
   id: string;
@@ -45,7 +46,11 @@ export default function AgentProfileHeader({ agent }: AgentProfileHeaderProps) {
             )}
           </div>
           <p className="text-gray-600 font-mono text-sm">
-            {agent.ensName || agent.walletAddress}
+            <AddressDisplay
+              address={agent.walletAddress}
+              ensName={agent.ensName}
+              titleMode="address"
+            />
           </p>
           {isVerified && (
             <p className="text-gray-500 text-sm mt-1">

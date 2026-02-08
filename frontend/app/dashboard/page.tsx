@@ -5,6 +5,7 @@ import { Navbar } from '@/components/Navbar';
 import { BountyCard } from '@/components/bounties/BountyCard';
 import { ReputationBadge } from '@/components/agents/ReputationBadge';
 import { FeedbackHistoryList } from '@/components/agents/FeedbackHistoryList';
+import { AddressDisplay } from '@/components/AddressDisplay';
 import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useRouter } from 'next/navigation';
@@ -14,6 +15,7 @@ interface Agent {
   id: string;
   name: string;
   walletAddress: string;
+  ensName?: string | null;
   skills: string[];
   reputation: {
     score: number;
@@ -167,7 +169,11 @@ export default function DashboardPage() {
               <div>
                 <h2 className="text-xl font-bold text-white mb-1">{agent.name}</h2>
                 <p className="text-slate-400 font-mono text-sm mb-3">
-                  {address?.slice(0, 8)}...{address?.slice(-6)}
+                  <AddressDisplay
+                    address={address}
+                    ensName={agent.ensName}
+                    titleMode="address"
+                  />
                 </p>
                 <div className="flex flex-wrap gap-2 mb-4">
                   {agent.skills.slice(0, 6).map(skill => (
