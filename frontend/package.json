@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "demo:api-smoke": "node scripts/live-demo-api-smoke.mjs"
   },
   "dependencies": {
     "@erc7824/nitrolite": "^0.5.3",

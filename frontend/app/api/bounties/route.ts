@@ -8,7 +8,7 @@ import {
 } from "@/lib/contracts/addresses";
 import { mapBountyRow, type BountyRow } from "@/lib/supabase/models";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { openChannel } from "@/lib/services/yellow";
+import { openChannelWithSDK } from "@/lib/services/yellow";
 import type {
   BountyStatus,
   BountyType,
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
 
       const tokenAddress = getPaymentToken(network);
 
-      const channelResult = await openChannel({
+      const channelResult = await openChannelWithSDK({
         poster: posterAddress,
         agent: "0x0000000000000000000000000000000000000000",
         deposit: reward,

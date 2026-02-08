@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAddress } from "viem";
 
+import { CHAIN_CONFIG, getPaymentToken } from "@/lib/contracts/addresses";
 import { type AgentRow, type BountyRow } from "@/lib/supabase/models";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { openChannel } from "@/lib/services/yellow";
+import { openChannelWithSDK } from "@/lib/services/yellow";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -76,10 +77,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     let channelId: string | null = null;
     try {
-      const channel = await openChannel({
+      const network = "sepolia" as const;
+      const channel = await openChannelWithSDK({
         poster: bounty.poster_address,
         agent: agentAddress.toLowerCase(),
         deposit: Number(bounty.reward),
+        token: getPaymentToken(network),
+        chainId: CHAIN_CONFIG[network].chainId,
       });
       channelId = channel.channelId;
     } catch (yellowError) {

@@ -1,0 +1,190 @@
+{
+  "baseUrl": "http://127.0.0.1:3001",
+  "timestamp": "2026-02-08T06:33:20.682Z",
+  "passCount": 20,
+  "failCount": 0,
+  "total": 20,
+  "email": "demo.1770532394099@example.com",
+  "results": [
+    {
+      "name": "Waitlist GET missing email",
+      "method": "GET",
+      "endpoint": "/api/waitlist",
+      "expected": "400 INVALID_EMAIL",
+      "pass": true,
+      "status": 400,
+      "detail": "Email query parameter is required"
+    },
+    {
+      "name": "Waitlist POST create",
+      "method": "POST",
+      "endpoint": "/api/waitlist",
+      "expected": "200 success=true",
+      "pass": true,
+      "status": 200,
+      "detail": "id=4"
+    },
+    {
+      "name": "Waitlist GET exists",
+      "method": "GET",
+      "endpoint": "/api/waitlist?email=demo.1770532394099%40example.com",
+      "expected": "200 exists=true",
+      "pass": true,
+      "status": 200,
+      "detail": "exists=true"
+    },
+    {
+      "name": "Agents POST register",
+      "method": "POST",
+      "endpoint": "/api/agents",
+      "expected": "200 success=true + agentId",
+      "pass": true,
+      "status": 200,
+      "detail": "agentId=agent_1770532396209"
+    },
+    {
+      "name": "Agents GET list",
+      "method": "GET",
+      "endpoint": "/api/agents?limit=5",
+      "expected": "200 agents[]",
+      "pass": true,
+      "status": 200,
+      "detail": "count=3"
+    },
+    {
+      "name": "Agents GET by id",
+      "method": "GET",
+      "endpoint": "/api/agents/agent_1770532396209",
+      "expected": "200 agent.id matches",
+      "pass": true,
+      "status": 200,
+      "detail": "agent.id=agent_1770532396209"
+    },
+    {
+      "name": "Agents PATCH by id (profile fields)",
+      "method": "PATCH",
+      "endpoint": "/api/agents/agent_1770532396209",
+      "expected": "200 success=true",
+      "pass": true,
+      "status": 200,
+      "detail": "ensName=demoagent.eth"
+    },
+    {
+      "name": "Agents PATCH (link ERC-8004 id)",
+      "method": "PATCH",
+      "endpoint": "/api/agents",
+      "expected": "200 success=true",
+      "pass": true,
+      "status": 200,
+      "detail": "erc8004Id=999999999999999999"
+    },
+    {
+      "name": "Agents GET reputation",
+      "method": "GET",
+      "endpoint": "/api/agents/agent_1770532396209/reputation",
+      "expected": "200 success=true",
+      "pass": true,
+      "status": 200,
+      "detail": "score=0"
+    },
+    {
+      "name": "Bounties POST create (flow A)",
+      "method": "POST",
+      "endpoint": "/api/bounties",
+      "expected": "200 success=true + bountyId",
+      "pass": true,
+      "status": 200,
+      "detail": "bountyId=bounty_1770532398425 channel=channel_1770532398425_z5ixao"
+    },
+    {
+      "name": "Bounties GET list",
+      "method": "GET",
+      "endpoint": "/api/bounties?limit=5",
+      "expected": "200 bounties[]",
+      "pass": true,
+      "status": 200,
+      "detail": "count=5"
+    },
+    {
+      "name": "Bounty GET by id (pre-claim)",
+      "method": "GET",
+      "endpoint": "/api/bounties/bounty_1770532398425",
+      "expected": "200 status OPEN",
+      "pass": true,
+      "status": 200,
+      "detail": "status=OPEN"
+    },
+    {
+      "name": "Bounty POST claim",
+      "method": "POST",
+      "endpoint": "/api/bounties/bounty_1770532398425/claim",
+      "expected": "200 success=true",
+      "pass": true,
+      "status": 200,
+      "detail": "channelId=channel_1770532399095_xtm6ag"
+    },
+    {
+      "name": "Bounty POST submit",
+      "method": "POST",
+      "endpoint": "/api/bounties/bounty_1770532398425/submit",
+      "expected": "200 success=true",
+      "pass": true,
+      "status": 200,
+      "detail": "reviewDeadline=1770618799307"
+    },
+    {
+      "name": "Bounty POST approve",
+      "method": "POST",
+      "endpoint": "/api/bounties/bounty_1770532398425/approve",
+      "expected": "200 status COMPLETED",
+      "pass": true,
+      "status": 200,
+      "detail": "status=COMPLETED"
+    },
+    {
+      "name": "Bounty GET by id (post-approve)",
+      "method": "GET",
+      "endpoint": "/api/bounties/bounty_1770532398425",
+      "expected": "200 status COMPLETED",
+      "pass": true,
+      "status": 200,
+      "detail": "status=COMPLETED"
+    },
+    {
+      "name": "Bounties POST create (flow B dispute)",
+      "method": "POST",
+      "endpoint": "/api/bounties",
+      "expected": "200 success=true + bountyId",
+      "pass": true,
+      "status": 200,
+      "detail": "bountyId=bounty_1770532399945"
+    },
+    {
+      "name": "Bounty POST claim (flow B)",
+      "method": "POST",
+      "endpoint": "/api/bounties/bounty_1770532399945/claim",
+      "expected": "200 success=true",
+      "pass": true,
+      "status": 200,
+      "detail": "channelId=channel_1770532400199_6x9pdy"
+    },
+    {
+      "name": "Bounty POST dispute",
+      "method": "POST",
+      "endpoint": "/api/bounties/bounty_1770532399945/dispute",
+      "expected": "200 success=true + disputeId",
+      "pass": true,
+      "status": 200,
+      "detail": "disputeId=dispute_bounty_1770532399945_1770532400392"
+    },
+    {
+      "name": "Bounty GET by id (post-dispute)",
+      "method": "GET",
+      "endpoint": "/api/bounties/bounty_1770532399945",
+      "expected": "200 disputeStatus PENDING",
+      "pass": true,
+      "status": 200,
+      "detail": "status=CLAIMED disputeStatus=PENDING"
+    }
+  ]
+}
