@@ -3,7 +3,151 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ClaworkLogo } from "./icons/ClaworkLogo";
 import Link from 'next/link';
-import { useAccount } from 'wagmi';
+import { useEffect, useMemo, useState } from 'react';
+import { useAccount, useEnsName } from 'wagmi';
+import { sepolia } from 'wagmi/chains';
+
+function shortenAddress(address?: string) {
+  if (!address) return '';
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+
+function WalletControls({ compact = false }: { compact?: boolean }) {
+  const { address } = useAccount();
+  const [agentEnsRecord, setAgentEnsRecord] = useState<{ wallet: string; ensName: string | null } | null>(null);
+
+  const { data: resolvedEnsName } = useEnsName({
+    address,
+    chainId: sepolia.id,
+    query: { enabled: Boolean(address) },
+  });
+
+  useEffect(() => {
+    if (!address) {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const loadAgent = async () => {
+      try {
+        const response = await fetch(`/api/agents?wallet=${encodeURIComponent(address)}`, {
+          signal: controller.signal,
+          cache: 'no-store',
+        });
+
+        if (!response.ok) {
+          setAgentEnsRecord({ wallet: address.toLowerCase(), ensName: null });
+          return;
+        }
+
+        const payload = await response.json() as {
+          agents?: Array<{ ensName?: string | null }>;
+        };
+
+        const ensName = payload.agents?.[0]?.ensName;
+        setAgentEnsRecord({
+          wallet: address.toLowerCase(),
+          ensName: typeof ensName === 'string' && ensName.trim() ? ensName : null,
+        });
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError') {
+          console.warn('Unable to fetch agent ENS name:', error);
+        }
+        setAgentEnsRecord({ wallet: address.toLowerCase(), ensName: null });
+      }
+    };
+
+    void loadAgent();
+
+    return () => controller.abort();
+  }, [address]);
+
+  const agentEnsName = useMemo(() => {
+    if (!address || !agentEnsRecord) return null;
+    return agentEnsRecord.wallet === address.toLowerCase() ? agentEnsRecord.ensName : null;
+  }, [address, agentEnsRecord]);
+
+  const displayName = useMemo(() => {
+    return agentEnsName || resolvedEnsName || shortenAddress(address);
+  }, [address, agentEnsName, resolvedEnsName]);
+
+  return (
+    <ConnectButton.Custom>
+      {({
+        account,
+        chain,
+        mounted,
+        authenticationStatus,
+        openAccountModal,
+        openChainModal,
+        openConnectModal,
+      }) => {
+        const ready = mounted && authenticationStatus !== 'loading';
+        const connected =
+          ready &&
+          !!account &&
+          !!chain &&
+          (!authenticationStatus || authenticationStatus === 'authenticated');
+
+        if (!ready) {
+          return <div aria-hidden style={{ opacity: 0, pointerEvents: 'none', userSelect: 'none' }} />;
+        }
+
+        if (!connected) {
+          return (
+            <button
+              type="button"
+              onClick={openConnectModal}
+              className="rounded-lg border border-primary/70 px-3 py-2 text-sm font-semibold text-primary hover:border-primary hover:bg-primary/10 transition-colors"
+            >
+              Connect
+            </button>
+          );
+        }
+
+        if (chain.unsupported) {
+          return (
+            <button
+              type="button"
+              onClick={openChainModal}
+              className="rounded-lg border border-red-500/60 px-3 py-2 text-sm font-semibold text-red-300 hover:bg-red-500/10 transition-colors"
+            >
+              Wrong network
+            </button>
+          );
+        }
+
+        const shownName = displayName || account.displayName || shortenAddress(account.address);
+
+        return (
+          <div className="flex items-center gap-2">
+            {!compact && (
+              <button
+                type="button"
+                onClick={openChainModal}
+                className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900/70 px-2 py-2 text-xs font-medium text-slate-200 hover:border-primary/60 transition-colors"
+              >
+                {chain.hasIcon ? <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-primary" /> : null}
+                <span>{chain.name}</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={openAccountModal}
+              className={`rounded-lg border border-primary/70 bg-primary/10 px-3 py-2 text-sm font-semibold text-white hover:border-primary transition-colors ${
+                compact ? 'max-w-[140px]' : 'max-w-[220px]'
+              }`}
+              title={shownName}
+            >
+              <span className="block truncate">{shownName}</span>
+            </button>
+          </div>
+        );
+      }}
+    </ConnectButton.Custom>
+  );
+}
 
 export function Navbar() {
   const { isConnected } = useAccount();
@@ -83,14 +227,7 @@ export function Navbar() {
             >
               Twitter
             </a>
-            <ConnectButton
-              chainStatus="icon"
-              showBalance={false}
-              accountStatus={{
-                smallScreen: 'avatar',
-                largeScreen: 'full',
-              }}
-            />
+            <WalletControls />
           </div>
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center gap-3">
@@ -100,11 +237,7 @@ export function Navbar() {
             >
               Bounties
             </Link>
-            <ConnectButton
-              chainStatus="none"
-              showBalance={false}
-              accountStatus="avatar"
-            />
+            <WalletControls compact />
           </div>
         </div>
       </div>
