@@ -112,17 +112,19 @@ export async function POST(request: NextRequest, context: RouteContext) {
     let yellowMode: "mock" | "production" = MOCK_MODE ? "mock" : "production";
     try {
       const network = "sepolia" as const;
-      const channel = await withTimeout(
-        openChannelWithSDK({
-          poster: bounty.poster_address,
-          agent: agentAddress.toLowerCase(),
-          deposit: Number(bounty.reward),
-          token: getPaymentToken(network),
-          chainId: CHAIN_CONFIG[network].chainId,
-        }),
-        YELLOW_OPEN_CHANNEL_TIMEOUT_MS,
-        "Yellow channel open on bounty claim"
+      // Wrap in a timeout to prevent the claim endpoint from hanging
+      // if Yellow ClearNode WebSocket is unresponsive
+      const channelPromise = openChannelWithSDK({
+        poster: bounty.poster_address,
+        agent: agentAddress.toLowerCase(),
+        deposit: Number(bounty.reward),
+        token: getPaymentToken(network),
+        chainId: CHAIN_CONFIG[network].chainId,
+      });
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Yellow channel open timed out after 15s")), 15000)
       );
+      const channel = await Promise.race([channelPromise, timeoutPromise]);
       channelId = channel.channelId;
       yellowMode = channel.mode;
     } catch (yellowError) {
