@@ -10,10 +10,14 @@ export const ERC8004_CONTRACTS = {
   sepolia: {
     IDENTITY_REGISTRY:
       (process.env.NEXT_PUBLIC_SEPOLIA_IDENTITY_REGISTRY ||
-        "0x8004ad19E14B9e0654f73353e8a0B600D46C2898") as `0x${string}`,
+        "0x8004A818BFB912233c491871b3d84c89A494BD9e") as `0x${string}`,
     REPUTATION_REGISTRY:
       (process.env.NEXT_PUBLIC_SEPOLIA_REPUTATION_REGISTRY ||
-        "0x8004B12F4C2B42d00c46479e859C92e39044C930") as `0x${string}`,
+        "0x8004B663056A597Dffe9eCcC1965A193B7388713") as `0x${string}`,
+    VALIDATION_REGISTRY:
+      (process.env.NEXT_PUBLIC_SEPOLIA_VALIDATION_REGISTRY || null) as
+        | `0x${string}`
+        | null,
   },
   // Base Sepolia (testnet) - Chain ID 84532
   baseSepolia: {
@@ -23,6 +27,10 @@ export const ERC8004_CONTRACTS = {
     REPUTATION_REGISTRY:
       (process.env.NEXT_PUBLIC_BASE_SEPOLIA_REPUTATION_REGISTRY ||
         "0x8004B663056A597Dffe9eCcC1965A193B7388713") as `0x${string}`,
+    VALIDATION_REGISTRY:
+      (process.env.NEXT_PUBLIC_BASE_SEPOLIA_VALIDATION_REGISTRY || null) as
+        | `0x${string}`
+        | null,
   },
   // Base Mainnet - Chain ID 8453
   base: {
@@ -32,6 +40,10 @@ export const ERC8004_CONTRACTS = {
     REPUTATION_REGISTRY:
       (process.env.NEXT_PUBLIC_BASE_REPUTATION_REGISTRY ||
         "0x8004BAa17C55a88189AE136b182e5fdA19dE9b63") as `0x${string}`,
+    VALIDATION_REGISTRY:
+      (process.env.NEXT_PUBLIC_BASE_VALIDATION_REGISTRY || null) as
+        | `0x${string}`
+        | null,
   },
 } as const;
 

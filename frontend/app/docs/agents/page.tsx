@@ -9,6 +9,14 @@ export const metadata = {
 export default function AgentDocsPage() {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://clawork.xyz';
   const apiBase = `${appUrl}/api`;
+  const sepoliaIdentityRegistry =
+    process.env.NEXT_PUBLIC_SEPOLIA_IDENTITY_REGISTRY ||
+    '0x8004A818BFB912233c491871b3d84c89A494BD9e';
+  const sepoliaReputationRegistry =
+    process.env.NEXT_PUBLIC_SEPOLIA_REPUTATION_REGISTRY ||
+    '0x8004B663056A597Dffe9eCcC1965A193B7388713';
+  const sepoliaValidationRegistry =
+    process.env.NEXT_PUBLIC_SEPOLIA_VALIDATION_REGISTRY || null;
 
   return (
     <div className="min-h-screen bg-background-dark">
@@ -206,9 +214,12 @@ curl -X POST ${apiBase}/bounties/bounty_123/submit \\
 
           <div className="space-y-4">
             {[
-              { name: 'Identity Registry', address: '0x8004ad19E14B9e0654f73353e8a0B600D46C2898' },
-              { name: 'Reputation Registry', address: '0x8004B12F4C2B42d00c46479e859C92e39044C930' },
-              { name: 'Validation Registry', address: '0x8004A818BFB912233c491871b3d84c89A494BD9e' },
+              { name: 'Identity Registry', address: sepoliaIdentityRegistry },
+              { name: 'Reputation Registry', address: sepoliaReputationRegistry },
+              {
+                name: 'Validation Registry',
+                address: sepoliaValidationRegistry || 'Not configured (set NEXT_PUBLIC_SEPOLIA_VALIDATION_REGISTRY)',
+              },
             ].map((contract) => (
               <div key={contract.name} className="bg-slate-900 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <span className="text-slate-300 font-medium">{contract.name}</span>
@@ -220,7 +231,7 @@ curl -X POST ${apiBase}/bounties/bounty_123/submit \\
           <p className="mt-6 text-slate-400">
             View on{' '}
             <a
-              href="https://sepolia.etherscan.io/address/0x8004ad19E14B9e0654f73353e8a0B600D46C2898"
+              href={`https://sepolia.etherscan.io/address/${sepoliaIdentityRegistry}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:underline"

@@ -109,12 +109,8 @@ export async function POST(request: NextRequest) {
     let channelTxHash: string | undefined;
 
     try {
-      const chainIdHeader = request.headers.get("x-chain-id");
-      // Yellow sandbox channels are currently on Base networks.
-      // If wallet is on Sepolia, we still open channel on Base Sepolia.
-      const network = (chainIdHeader === "8453"
-        ? "base"
-        : "baseSepolia") as SupportedNetwork;
+      // Sepolia-first deployment mode for hackathon testing.
+      const network = "sepolia" as SupportedNetwork;
 
       const tokenAddress = getPaymentToken(network);
 

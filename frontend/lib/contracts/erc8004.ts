@@ -44,7 +44,7 @@ export function getContracts(network: SupportedNetwork = DEFAULT_NETWORK) {
   return ERC8004_CONTRACTS[network];
 }
 
-// Legacy: Default public client (uses DEFAULT_NETWORK which is base)
+// Legacy: Default public client (uses DEFAULT_NETWORK)
 export const publicClient = clients[DEFAULT_NETWORK];
 
 // Current active network (can be changed at runtime)
