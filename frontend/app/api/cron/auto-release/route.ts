@@ -14,7 +14,9 @@ import { closeChannel, MOCK_MODE, updateAllocation } from "@/lib/services/yellow
  * Vercel Cron job that checks for bounties past their review deadline
  * and automatically releases payment to the agent via Yellow state channels.
  *
- * Runs every hour. Protected by CRON_SECRET.
+ * Runs daily at midnight UTC via Vercel Cron. Protected by CRON_SECRET.
+ * Can also be called manually (e.g. during demos) — if CRON_SECRET is not
+ * set, the endpoint is open; otherwise pass `Authorization: Bearer <secret>`.
  *
  * Bounties eligible for auto-release:
  * - status = "SUBMITTED"
