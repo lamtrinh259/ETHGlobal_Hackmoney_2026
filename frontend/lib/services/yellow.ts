@@ -419,7 +419,7 @@ interface RPCResponse {
 }
 
 interface PendingRequest {
-  resolve: (value: unknown) => void;
+  resolve: (value: any) => void;
   reject: (error: unknown) => void;
   timeout: NodeJS.Timeout;
 }
@@ -610,7 +610,7 @@ class YellowWSClient {
   /**
    * Send RPC request and wait for response
    */
-  async sendRequest<T = unknown>(
+  async sendRequest<T = any>(
     method: string,
     params: Record<string, unknown> = {},
     timeoutMs = 30000
@@ -650,28 +650,28 @@ class YellowWSClient {
   /**
    * Health check ping
    */
-  async ping(): Promise<unknown> {
+  async ping(): Promise<any> {
     return this.sendRequest('ping', {});
   }
 
   /**
    * Get ClearNode configuration
    */
-  async getConfig(): Promise<unknown> {
+  async getConfig(): Promise<any> {
     return this.sendRequest('get_config', {});
   }
 
   /**
    * Get supported assets/tokens
    */
-  async getAssets(): Promise<unknown> {
+  async getAssets(): Promise<any> {
     return this.sendRequest('get_assets', {});
   }
 
   /**
    * Create new state channel
    */
-  async createChannel(chainId: number, token: string): Promise<unknown> {
+  async createChannel(chainId: number, token: string): Promise<any> {
     return this.sendRequest('create_channel', {
       chain_id: chainId,
       token,
@@ -685,7 +685,7 @@ class YellowWSClient {
     channelId: string,
     amount: string,
     operation: 'deposit' | 'withdraw'
-  ): Promise<unknown> {
+  ): Promise<any> {
     return this.sendRequest('resize_channel', {
       channel_id: channelId,
       amount,
@@ -696,7 +696,7 @@ class YellowWSClient {
   /**
    * Close state channel
    */
-  async closeChannel(channelId: string): Promise<unknown> {
+  async closeChannel(channelId: string): Promise<any> {
     return this.sendRequest('close_channel', {
       channel_id: channelId,
     });
@@ -705,14 +705,14 @@ class YellowWSClient {
   /**
    * Get channels for user
    */
-  async getChannels(address?: string): Promise<unknown> {
+  async getChannels(address?: string): Promise<any> {
     return this.sendRequest('get_channels', address ? { address } : {});
   }
 
   /**
    * Get ledger balances
    */
-  async getLedgerBalances(address?: string): Promise<unknown> {
+  async getLedgerBalances(address?: string): Promise<any> {
     return this.sendRequest('get_ledger_balances', address ? { address } : {});
   }
 
@@ -723,7 +723,7 @@ class YellowWSClient {
    * pre-signed JSON-RPC messages as strings. This method sends them directly
    * and correlates responses by request ID.
    */
-  async sendRawMessage<T = unknown>(message: string, timeoutMs = 30000): Promise<T> {
+  async sendRawMessage<T = any>(message: string, timeoutMs = 30000): Promise<T> {
     await this.connect();
 
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
