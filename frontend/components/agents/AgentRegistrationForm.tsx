@@ -123,7 +123,7 @@ export function AgentRegistrationForm() {
         body: JSON.stringify({
           wallet: address,
           name: name.trim(),
-          ensName: ensName.trim() || null,
+          ensName: ensName.trim().toLowerCase() || null,
           skills,
         }),
       });
@@ -317,18 +317,18 @@ export function AgentRegistrationForm() {
           {/* ENS Name */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              ENS Name (optional)
+              ENS Subdomain (optional)
             </label>
             <input
               type="text"
               value={ensName}
               onChange={(e) => setEnsName(e.target.value)}
-              placeholder="youragent.eth"
+              placeholder="exampleagent or exampleagent.clawork.eth"
               maxLength={128}
               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:border-primary focus:outline-none"
             />
             <p className="text-slate-500 text-xs mt-2">
-              Add your ENS identity now. You can set/update text records later in the ENS Manager.
+              If available, we will assign this as your *.clawork.eth name on Sepolia during registration.
             </p>
           </div>
 

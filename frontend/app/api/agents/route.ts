@@ -5,6 +5,12 @@ import { IDENTITY_REGISTRY_ABI } from "@/lib/contracts/abis/identityRegistry";
 import { CONTRACTS } from "@/lib/contracts/addresses";
 import { getAgentId, publicClient } from "@/lib/contracts/erc8004";
 import {
+  EnsSubdomainError,
+  extractRequestedEnsLabel,
+  getEnsParentDomain,
+  registerEnsSubdomain,
+} from "@/lib/services/ens-subdomain";
+import {
   DEFAULT_REPUTATION,
   mapAgentRow,
   normalizeReputation,
@@ -35,7 +41,7 @@ export async function POST(request: NextRequest) {
     const wallet = typeof body.wallet === "string" ? body.wallet : "";
     const name = typeof body.name === "string" ? body.name : "";
     const skills = Array.isArray(body.skills) ? (body.skills as string[]) : [];
-    const ensName = typeof body.ensName === "string" ? body.ensName.trim() : "";
+    const ensNameInput = typeof body.ensName === "string" ? body.ensName.trim().toLowerCase() : "";
 
     if (!wallet || !isAddress(wallet)) {
       return badRequest("INVALID_WALLET", "Valid wallet address required");
@@ -51,6 +57,14 @@ export async function POST(request: NextRequest) {
 
     const walletLower = wallet.toLowerCase();
     const normalizedSkills = normalizeSkills(skills);
+    const parentDomain = getEnsParentDomain();
+    const requestedEnsLabel = ensNameInput
+      ? extractRequestedEnsLabel(ensNameInput, parentDomain)
+      : null;
+    let resolvedEnsName: string | null = ensNameInput || null;
+    if (requestedEnsLabel) {
+      resolvedEnsName = `${requestedEnsLabel}.${parentDomain}`;
+    }
 
     if (!normalizedSkills.length) {
       return badRequest("INVALID_SKILLS", "At least one non-empty skill required");
@@ -76,7 +90,41 @@ export async function POST(request: NextRequest) {
     }
 
     if (existingAgent) {
-      const mapped = mapAgentRow(existingAgent as AgentRow);
+      let mapped = mapAgentRow(existingAgent as AgentRow);
+      let ensRegistration:
+        | Awaited<ReturnType<typeof registerEnsSubdomain>>
+        | null = null;
+
+      if (requestedEnsLabel && !mapped.ensName) {
+        ensRegistration = await registerEnsSubdomain({
+          label: requestedEnsLabel,
+          walletAddress: wallet as Address,
+          textRecords: [
+            { key: "clawork.skills", value: normalizedSkills.join(",") },
+            { key: "clawork.status", value: "available" },
+            { key: "clawork.preferredChain", value: "11155111" },
+          ],
+        });
+        resolvedEnsName = ensRegistration.ensName;
+
+        const { data: updatedRows, error: updateError } = await supabase
+          .from("agents")
+          .update({
+            ens_name: ensRegistration.ensName,
+            updated_at: Date.now(),
+          })
+          .eq("id", mapped.id)
+          .select("*");
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        if (updatedRows && updatedRows.length > 0) {
+          mapped = mapAgentRow(updatedRows[0] as AgentRow);
+        }
+      }
+
       return NextResponse.json({
         success: true,
         agentId: mapped.id,
@@ -86,8 +134,46 @@ export async function POST(request: NextRequest) {
         skills: mapped.skills,
         ensName: mapped.ensName,
         reputation: mapped.reputation,
-        message: "Agent already registered",
+        ensRegistration,
+        message: ensRegistration
+          ? "Agent already existed; ENS subdomain has now been assigned."
+          : "Agent already registered",
       });
+    }
+
+    let ensRegistration:
+      | Awaited<ReturnType<typeof registerEnsSubdomain>>
+      | null = null;
+
+    if (requestedEnsLabel && resolvedEnsName) {
+      const { data: ensOwnerRow, error: ensOwnerError } = await supabase
+        .from("agents")
+        .select("*")
+        .eq("ens_name", resolvedEnsName)
+        .maybeSingle();
+
+      if (ensOwnerError) {
+        throw ensOwnerError;
+      }
+
+      if (ensOwnerRow && (ensOwnerRow as AgentRow).wallet_address !== walletLower) {
+        return badRequest(
+          "ENS_SUBDOMAIN_TAKEN",
+          `${resolvedEnsName} is already assigned to another agent.`,
+          409
+        );
+      }
+
+      ensRegistration = await registerEnsSubdomain({
+        label: requestedEnsLabel,
+        walletAddress: wallet as Address,
+        textRecords: [
+          { key: "clawork.skills", value: normalizedSkills.join(",") },
+          { key: "clawork.status", value: "available" },
+          { key: "clawork.preferredChain", value: "11155111" },
+        ],
+      });
+      resolvedEnsName = ensRegistration.ensName;
     }
 
     const agentId = `agent_${Date.now()}`;
@@ -97,7 +183,7 @@ export async function POST(request: NextRequest) {
       id: agentId,
       wallet_address: walletLower,
       name: name.trim(),
-      ens_name: ensName || null,
+      ens_name: resolvedEnsName,
       skills: normalizedSkills,
       erc8004_id: existingId?.toString() || null,
       reputation: DEFAULT_REPUTATION,
@@ -116,14 +202,20 @@ export async function POST(request: NextRequest) {
       erc8004Id: existingId?.toString() || null,
       walletAddress: walletLower,
       name: name.trim(),
-      ensName: ensName || null,
+      ensName: resolvedEnsName,
       skills: normalizedSkills,
       reputation: DEFAULT_REPUTATION,
-      message: existingId
-        ? "Agent registered! ERC-8004 identity found on-chain."
-        : "Agent registered! Connect wallet to mint ERC-8004 identity.",
+      ensRegistration,
+      message: ensRegistration
+        ? "Agent registered and ENS subdomain issued on Sepolia."
+        : existingId
+          ? "Agent registered! ERC-8004 identity found on-chain."
+          : "Agent registered! Connect wallet to mint ERC-8004 identity.",
     });
   } catch (error) {
+    if (error instanceof EnsSubdomainError) {
+      return badRequest(error.code, error.message, error.status);
+    }
     console.error("Agent registration error:", error);
     return badRequest("SERVER_ERROR", "Failed to register agent", 500);
   }
