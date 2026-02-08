@@ -1249,6 +1249,136 @@ export async function openChannelWithSDK(params: {
 }
 
 // ============================================================================
+// Dispute / Challenge (ERC-7824)
+// ============================================================================
+
+export interface ChallengeResult {
+  txHash?: string;
+  mode: "mock" | "production";
+}
+
+/**
+ * Submit an on-chain challenge via Custody.challenge()
+ *
+ * This initiates the ERC-7824 dispute resolution flow. When a participant
+ * disagrees with the current state, they submit a challenge with their
+ * proposed allocation. The adjudicator contract evaluates the challenge
+ * after the challenge period expires.
+ *
+ * In mock mode, returns a simulated tx hash.
+ */
+export async function challengeChannel(
+  channelId: string,
+  challengerAddress: string,
+  proposedAllocation: Record<string, number>,
+): Promise<ChallengeResult> {
+  if (MOCK_MODE) {
+    return challengeChannelMock(channelId);
+  }
+
+  const signer = getSDKMessageSigner();
+  if (!signer) {
+    console.warn('[Yellow] SDK signer not available for challenge, falling back to mock');
+    return challengeChannelMock(channelId);
+  }
+
+  try {
+    const channel = channelCache.get(channelId);
+    if (!channel) {
+      throw new Error(`Channel ${channelId} not found in cache`);
+    }
+
+    // Build candidate state with the proposed allocation
+    const tokenAddress = (typeof channel.token === 'string' && channel.token.startsWith('0x')
+      ? channel.token
+      : YELLOW_CONFIG.SEPOLIA_USDC) as Address;
+
+    const allocations = Object.entries(proposedAllocation).map(([dest, amount]) => ({
+      destination: dest as Address,
+      token: tokenAddress,
+      amount: BigInt(Math.round(amount * 1e6)), // USDC 6 decimals
+    }));
+
+    const candidateState = {
+      intent: 0, // Final state
+      version: 1n,
+      data: '0x' as Hex,
+      allocations,
+    };
+
+    // Sign the candidate state
+    const stateHash = getStateHash(channelId as Hex, candidateState);
+
+    // Use the server signer to get the signature
+    const { getServerAccount } = await import('./yellow-signer');
+    const serverAccount = getServerAccount();
+    if (!serverAccount) {
+      throw new Error('Server account not available for signing challenge');
+    }
+
+    // We need a wallet client for signing - create a minimal one
+    const { createWalletClient, http } = await import('viem');
+    const { sepolia } = await import('viem/chains');
+    const walletClient = createWalletClient({
+      account: serverAccount,
+      chain: sepolia,
+      transport: http(process.env.NEXT_PUBLIC_SEPOLIA_RPC || 'https://rpc.sepolia.org'),
+    });
+
+    const challengerSig = await walletClient.signMessage({
+      account: serverAccount,
+      message: { raw: stateHash },
+    });
+
+    // Build channel struct from cached metadata or from channel data
+    const channelStruct = {
+      participants: channel.participants as readonly [`0x${string}`, `0x${string}`],
+      adjudicator: YELLOW_CONFIG.ADJUDICATOR as `0x${string}`,
+      challenge: BigInt(3600), // 1 hour challenge period
+      nonce: 1n,
+    };
+
+    const stateStruct = {
+      intent: candidateState.intent,
+      version: candidateState.version,
+      data: candidateState.data,
+      allocations: candidateState.allocations.map(a => ({
+        destination: a.destination as `0x${string}`,
+        token: a.token as `0x${string}`,
+        amount: a.amount,
+      })),
+      sigs: [challengerSig] as readonly `0x${string}`[],
+    };
+
+    // Create a public client for waiting on receipt
+    const { createPublicClient } = await import('viem');
+    const publicClient = createPublicClient({
+      chain: sepolia,
+      transport: http(process.env.NEXT_PUBLIC_SEPOLIA_RPC || 'https://rpc.sepolia.org'),
+    });
+
+    // Submit Custody.challenge() on-chain
+    const hash = await walletClient.writeContract({
+      address: YELLOW_CONFIG.CUSTODY as `0x${string}`,
+      abi: CustodyAbi,
+      functionName: 'challenge',
+      args: [channelId as Hex, stateStruct, [], challengerSig],
+      account: serverAccount,
+      chain: sepolia,
+    });
+
+    await publicClient.waitForTransactionReceipt({ hash });
+
+    console.log(`[Yellow] Challenge submitted for channel ${channelId}: ${hash}`);
+    return { txHash: hash, mode: "production" };
+  } catch (error) {
+    console.error('[Yellow] Challenge submission failed:', error);
+    console.warn('[Yellow] Falling back to mock challenge');
+    return challengeChannelMock(channelId);
+  }
+}
+
+// ============================================================================
 // Mock implementations for development and fallback
 // ============================================================================
 
@@ -1286,6 +1416,12 @@ function updateAllocationMock(
   channel.allocation = newAllocation;
   channelCache.set(channelId, channel);
   console.log(`[MOCK] Yellow channel ${channelId} allocation updated`);
+}
+
+function challengeChannelMock(channelId: string): ChallengeResult {
+  const mockTxHash = `0x${Math.random().toString(16).slice(2)}${Math.random().toString(16).slice(2)}`;
+  console.log(`[MOCK] Yellow channel ${channelId} challenged. Mock txHash: ${mockTxHash}`);
+  return { txHash: mockTxHash, mode: "mock" };
 }
 
 function closeChannelMock(channelId: string): {
