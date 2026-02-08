@@ -65,10 +65,13 @@ const YELLOW_CONFIG = {
 
   // Token addresses
   TEST_USD: process.env.NEXT_PUBLIC_YELLOW_TEST_USD || '0xDB9F293e3898c9E5536A3be1b0C56c89d2b32DEb',
-  BASE_USDC: process.env.NEXT_PUBLIC_BASE_USDC || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+  SEPOLIA_USDC:
+    process.env.NEXT_PUBLIC_SEPOLIA_USDC ||
+    process.env.NEXT_PUBLIC_YELLOW_TEST_USD ||
+    '0xDB9F293e3898c9E5536A3be1b0C56c89d2b32DEb',
 
-  // Chain configuration (Base Sepolia for hackathon sandbox)
-  DEFAULT_CHAIN_ID: 84532, // Base Sepolia
+  // Chain configuration (Ethereum Sepolia for hackathon testing)
+  DEFAULT_CHAIN_ID: 11155111, // Ethereum Sepolia
 
   // Mode flag - set YELLOW_MOCK_MODE=false to enable real SDK
   MOCK_MODE: process.env.YELLOW_MOCK_MODE !== 'false',
@@ -1021,8 +1024,8 @@ export async function updateAllocation(
     // TODO: Add publicClient parameter or pass decimals from caller
 
     // Convert allocation to SDK format (amounts in smallest unit)
-    const tokenAddress = YELLOW_CONFIG.BASE_USDC as Address;
-    // Hardcoded to 6 decimals for USDC - this is correct for Base USDC
+    const tokenAddress = YELLOW_CONFIG.SEPOLIA_USDC as Address;
+    // Hardcoded to 6 decimals for USDC-style stablecoins
     // In future, should query decimals or accept as parameter
     const decimals = 6;
 
@@ -1169,7 +1172,7 @@ export async function openChannelWithSDK(params: {
 
   try {
     const chainId = params.chainId || YELLOW_CONFIG.DEFAULT_CHAIN_ID;
-    const tokenAddress = (params.token || YELLOW_CONFIG.BASE_USDC) as Address;
+    const tokenAddress = (params.token || YELLOW_CONFIG.SEPOLIA_USDC) as Address;
 
     console.log(`[Yellow] Creating channel with SDK signer on chain ${chainId}...`);
 
@@ -1194,8 +1197,6 @@ export async function openChannelWithSDK(params: {
 
     // Step 3: Create signed resize message to deposit funds
     // Note: This function doesn't have publicClient access, so we use 6 decimals for USDC
-    // This is correct for Base USDC on mainnet (0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
-    const tokenAddressForDecimals = (params.token || YELLOW_CONFIG.BASE_USDC) as Address;
     const decimals = 6; // USDC standard - should query in future if supporting other tokens
     const depositAmount = BigInt(Math.round(params.deposit * 10 ** decimals));
     console.log(`[Yellow] Deposit amount: ${params.deposit} USDC = ${depositAmount.toString()} wei`);
