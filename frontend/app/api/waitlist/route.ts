@@ -136,6 +136,10 @@ export async function POST(request: NextRequest) {
       throw error;
     }
 
+    if (!data) {
+      throw new Error("Waitlist insert returned no row");
+    }
+
     return NextResponse.json({
       success: true,
       id: data.id,
