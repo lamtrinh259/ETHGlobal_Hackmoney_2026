@@ -9,8 +9,8 @@
  * - Responding to validation requests (for validators)
  * - Reading validation status
  *
- * NOTE: Validation Registry is not deployed on all networks (e.g., Base Sepolia).
- * These hooks will return errors when used on unsupported networks.
+ * NOTE: Validation Registry is optional for this project and disabled by default.
+ * These hooks will return unavailable unless NEXT_PUBLIC_VALIDATION_REGISTRY is set.
  */
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
@@ -20,12 +20,12 @@ import {
   usePublicClient,
 } from 'wagmi';
 import { type Address } from 'viem';
-import { CONTRACTS } from '@/lib/contracts/addresses';
 import { VALIDATION_REGISTRY_ABI } from '@/lib/contracts/abis/validationRegistry';
 import { uploadToIPFS, computeHash } from '@/lib/services/ipfs';
 
 // Helper to check if validation registry is available
-const VALIDATION_REGISTRY_ADDRESS = CONTRACTS.VALIDATION_REGISTRY;
+const VALIDATION_REGISTRY_ADDRESS =
+  (process.env.NEXT_PUBLIC_VALIDATION_REGISTRY as Address | undefined) || null;
 const isValidationRegistryAvailable = VALIDATION_REGISTRY_ADDRESS !== null;
 
 // ============================================================================
