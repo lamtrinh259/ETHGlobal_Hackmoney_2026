@@ -109,6 +109,7 @@ export interface OpenChannelResult {
   channelId: string;
   sessionId: string;
   txHash?: string;
+  mode: "mock" | "production";
 }
 
 export interface TokenApprovalParams {
@@ -986,6 +987,7 @@ export async function openChannel(params: OpenChannelParams): Promise<OpenChanne
       txHash:
         custodyTxHash ??
         (approvalTxHash !== 'already_approved' ? approvalTxHash : undefined),
+      mode: "production",
     };
 
   } catch (error) {
@@ -1072,7 +1074,7 @@ export async function updateAllocation(
 export async function closeChannel(
   channelId: string,
   _signerFn?: (message: string) => Promise<string>
-): Promise<{ txHash?: string }> {
+): Promise<{ txHash?: string; mode: "mock" | "production" }> {
   if (MOCK_MODE) {
     return closeChannelMock(channelId);
   }
@@ -1117,7 +1119,7 @@ export async function closeChannel(
       console.log(`[Yellow] Settlement transaction: ${txHash}`);
     }
 
-    return { txHash };
+    return { txHash, mode: "production" };
   } catch (error) {
     console.error('[Yellow] Failed to close channel:', error);
     // Fall back to mock for resilience
@@ -1232,6 +1234,7 @@ export async function openChannelWithSDK(params: {
       channelId,
       sessionId,
       txHash: resizeResult?.tx_hash,
+      mode: "production",
     };
   } catch (error) {
     console.error('[Yellow] Failed to open channel with SDK:', error);
@@ -1268,7 +1271,7 @@ function openChannelMock(params: OpenChannelParams): OpenChannelResult {
   });
 
   console.log(`[MOCK] Yellow channel opened: ${channelId}`);
-  return { channelId, sessionId };
+  return { channelId, sessionId, mode: "mock" };
 }
 
 function updateAllocationMock(
@@ -1285,7 +1288,10 @@ function updateAllocationMock(
   console.log(`[MOCK] Yellow channel ${channelId} allocation updated`);
 }
 
-function closeChannelMock(channelId: string): { txHash?: string } {
+function closeChannelMock(channelId: string): {
+  txHash?: string;
+  mode: "mock" | "production";
+} {
   const channel = channelCache.get(channelId);
   if (!channel) {
     throw new Error('Channel not found');
@@ -1297,7 +1303,7 @@ function closeChannelMock(channelId: string): { txHash?: string } {
   const mockTxHash = `0x${Math.random().toString(16).slice(2)}${Math.random().toString(16).slice(2)}`;
   console.log(`[MOCK] Yellow channel ${channelId} closed. Mock txHash: ${mockTxHash}`);
 
-  return { txHash: mockTxHash };
+  return { txHash: mockTxHash, mode: "mock" };
 }
 
 // ============================================================================

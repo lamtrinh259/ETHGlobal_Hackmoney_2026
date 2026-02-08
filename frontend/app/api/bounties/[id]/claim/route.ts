@@ -4,7 +4,7 @@ import { isAddress } from "viem";
 import { CHAIN_CONFIG, getPaymentToken } from "@/lib/contracts/addresses";
 import { type AgentRow, type BountyRow } from "@/lib/supabase/models";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { openChannelWithSDK } from "@/lib/services/yellow";
+import { MOCK_MODE, openChannelWithSDK } from "@/lib/services/yellow";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -76,6 +76,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     let channelId: string | null = null;
+    let yellowMode: "mock" | "production" = MOCK_MODE ? "mock" : "production";
     try {
       const network = "sepolia" as const;
       const channel = await openChannelWithSDK({
@@ -86,6 +87,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         chainId: CHAIN_CONFIG[network].chainId,
       });
       channelId = channel.channelId;
+      yellowMode = channel.mode;
     } catch (yellowError) {
       console.warn("Yellow channel open failed during claim:", yellowError);
     }
@@ -122,6 +124,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({
       success: true,
       channelId,
+      yellowMode,
       submitDeadline,
       message:
         "Bounty claimed! Complete and submit your work before the deadline.",

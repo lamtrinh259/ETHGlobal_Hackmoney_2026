@@ -254,7 +254,7 @@ async function main() {
     },
     (status, json) => ({
       pass: status === 200 && json?.success === true && Boolean(json?.bountyId),
-      detail: `bountyId=${json?.bountyId ?? "n/a"} channel=${json?.bounty?.yellowChannelId ?? "n/a"}`,
+      detail: `bountyId=${json?.bountyId ?? "n/a"} channel=${json?.bounty?.yellowChannelId ?? "n/a"} mode=${json?.yellowMode ?? "n/a"}`,
     })
   );
 
@@ -301,7 +301,7 @@ async function main() {
     },
     (status, json) => ({
       pass: status === 200 && json?.success === true,
-      detail: `channelId=${json?.channelId ?? "n/a"}`,
+      detail: `channelId=${json?.channelId ?? "n/a"} mode=${json?.yellowMode ?? "n/a"}`,
     })
   );
   void bountyClaimA;
@@ -335,7 +335,7 @@ async function main() {
     },
     (status, json) => ({
       pass: status === 200 && json?.status === "COMPLETED",
-      detail: `status=${json?.status ?? "n/a"}`,
+      detail: `status=${json?.status ?? "n/a"} mode=${json?.yellowMode ?? "n/a"}`,
     })
   );
   void bountyApproveA;
