@@ -8,7 +8,7 @@ import {
 } from "@/lib/contracts/addresses";
 import { mapBountyRow, type BountyRow } from "@/lib/supabase/models";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { openChannelWithSDK } from "@/lib/services/yellow";
+import { MOCK_MODE, openChannelWithSDK } from "@/lib/services/yellow";
 import type {
   BountyStatus,
   BountyType,
@@ -107,6 +107,7 @@ export async function POST(request: NextRequest) {
     let yellowChannelId: string | undefined;
     let yellowSessionId: string | undefined;
     let channelTxHash: string | undefined;
+    let yellowMode: "mock" | "production" = MOCK_MODE ? "mock" : "production";
 
     try {
       // Sepolia-first deployment mode for hackathon testing.
@@ -125,6 +126,7 @@ export async function POST(request: NextRequest) {
       yellowChannelId = channelResult.channelId;
       yellowSessionId = channelResult.sessionId;
       channelTxHash = channelResult.txHash;
+      yellowMode = channelResult.mode;
     } catch (yellowError) {
       console.warn(
         "[Bounty API] Yellow channel creation skipped (mock mode or error):",
@@ -176,6 +178,7 @@ export async function POST(request: NextRequest) {
       bountyId,
       bounty,
       channelTxHash,
+      yellowMode,
       message: yellowChannelId
         ? `Bounty created with Yellow Network channel! ${
             channelTxHash ? `Tx: ${channelTxHash}` : ""

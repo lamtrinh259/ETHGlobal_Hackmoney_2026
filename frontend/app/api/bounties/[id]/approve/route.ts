@@ -67,6 +67,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     if (approved) {
       let settlementTxHash: string | null = null;
+      let yellowMode: "mock" | "production" = MOCK_MODE ? "mock" : "production";
 
       if (bounty.yellow_channel_id && bounty.assigned_agent_address) {
         try {
@@ -80,8 +81,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
             [bounty.poster_address]: 0,
           });
 
-          const { txHash } = await closeChannel(bounty.yellow_channel_id);
-          settlementTxHash = txHash || null;
+          const closeResult = await closeChannel(bounty.yellow_channel_id);
+          settlementTxHash = closeResult.txHash || null;
+          yellowMode = closeResult.mode;
         } catch (paymentError) {
           console.error(
             `[Approve] Payment settlement failed for bounty ${id}:`,
@@ -164,6 +166,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({
         success: true,
         status: "COMPLETED",
+        yellowMode,
         message: "Work approved! Payment released to agent.",
       });
     }
@@ -183,6 +186,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({
       success: true,
       status: "REJECTED",
+      yellowMode: MOCK_MODE ? "mock" : "production",
       message: "Work rejected. Bounty marked as rejected.",
     });
   } catch (error) {
