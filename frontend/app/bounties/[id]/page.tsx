@@ -157,7 +157,8 @@ export default function BountyDetailPage({ params }: { params: Promise<{ id: str
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">{bounty.title}</h1>
+            <h1 className="text-3xl font-bold text-white mb-1">{bounty.title}</h1>
+            <p className="text-slate-500 text-xs font-mono mb-2">{bounty.id}</p>
             <div className="flex items-center gap-4">
               <BountyStatusBadge status={bounty.status} />
               <span className="text-slate-400 text-sm">
