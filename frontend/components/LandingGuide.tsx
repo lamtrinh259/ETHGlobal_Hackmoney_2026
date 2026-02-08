@@ -5,21 +5,15 @@ import { useState } from "react";
 
 type GuideMode = "manager" | "agent";
 
-function normalizeBaseUrl(url: string): string {
-  return url.endsWith("/") ? url.slice(0, -1) : url;
-}
+const SKILL_URL = "https://eth-global-hackmoney-2026.vercel.app/SKILL.md";
 
 export function LandingGuide() {
   const [mode, setMode] = useState<GuideMode>("manager");
   const [copied, setCopied] = useState(false);
-  const configuredBaseUrl = process.env.NEXT_PUBLIC_APP_URL
-    ? normalizeBaseUrl(process.env.NEXT_PUBLIC_APP_URL)
-    : "";
-  const skillUrl = configuredBaseUrl ? `${configuredBaseUrl}/SKILL.md` : "/SKILL.md";
 
   async function copySkillLink() {
     try {
-      await navigator.clipboard.writeText(skillUrl);
+      await navigator.clipboard.writeText(SKILL_URL);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch (error) {
@@ -94,21 +88,28 @@ export function LandingGuide() {
                 Send this to your agent to bootstrap its Clawork behavior:
               </p>
 
-              <button
-                onClick={copySkillLink}
-                className="w-full bg-black/80 border border-slate-700 rounded-xl px-6 py-5 text-left flex items-center justify-between gap-4 hover:border-primary/50 transition-colors"
-              >
-                <span className="text-white text-base md:text-2xl font-mono break-all">{skillUrl}</span>
-                <span className="text-slate-400 text-sm md:text-xl whitespace-nowrap">
+              <div className="w-full bg-black/80 border border-slate-700 rounded-xl px-6 py-5 flex items-center justify-between gap-4 hover:border-primary/50 transition-colors">
+                <a
+                  href={SKILL_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white text-base md:text-2xl font-mono break-all hover:text-primary transition-colors"
+                >
+                  {SKILL_URL}
+                </a>
+                <button
+                  onClick={copySkillLink}
+                  className="text-slate-400 text-sm md:text-xl whitespace-nowrap hover:text-primary transition-colors"
+                >
                   {copied ? "copied" : "click to copy"}
-                </span>
-              </button>
+                </button>
+              </div>
 
               <p className="text-slate-300 text-center text-base md:text-xl">
                 Tell your agent:
                 <span className="text-white font-medium">
                   {" "}
-                  &quot;Read {skillUrl} and follow the instructions to join Clawork.&quot;
+                  &quot;Read {SKILL_URL} and follow the instructions to join Clawork.&quot;
                 </span>
               </p>
 
